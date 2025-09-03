@@ -5,12 +5,15 @@ import { ptBR } from 'date-fns/locale';
 import { TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
+import React from 'react';
 
 interface UpdateLogsProps {
   logs: UpdateLog[];
 }
 
-export const UpdateLogs = ({ logs }: UpdateLogsProps) => {
+export const UpdateLogs = React.memo(({ logs }: UpdateLogsProps) => {
+  const displayLogs = React.useMemo(() => logs.slice(0, 10), [logs]);
+
   if (logs.length === 0) {
     return (
       <Card className="p-4">
@@ -27,7 +30,7 @@ export const UpdateLogs = ({ logs }: UpdateLogsProps) => {
       <h3 className="text-sm font-semibold mb-3 text-foreground">Atualizações Recentes</h3>
       <ScrollArea className="h-32">
         <AnimatePresence mode="popLayout">
-          {logs.slice(0, 10).map((log) => (
+          {displayLogs.map((log) => (
             <motion.div
               key={log.id}
               initial={{ opacity: 0, x: -20 }}
@@ -63,4 +66,4 @@ export const UpdateLogs = ({ logs }: UpdateLogsProps) => {
       </ScrollArea>
     </Card>
   );
-};
+});

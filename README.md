@@ -1,73 +1,134 @@
-# Welcome to your Lovable project
+# 🍽️ **Sheet Chef Sync - Sistema de Inventário Inteligente**
 
-## Project info
+Sistema moderno de gerenciamento de inventário com integração Google Sheets e Firebase.
 
-**URL**: https://lovable.dev/projects/188d51d9-41c6-4364-b28e-2b37593c59cd
+## 🚀 **Características**
 
-## How can I edit this code?
+- ✅ **Interface Moderna**: React + TypeScript + Tailwind CSS
+- 🔄 **Sync Google Sheets**: Integração bidirecional com planilhas
+- 🔥 **Firebase Backend**: Firestore + Hosting
+- 📱 **Responsivo**: Mobile-first design
+- 🎯 **Smart Commands**: Sistema de comandos inteligente
+- 🔍 **Auto-sugestões**: Detecção de itens inexistentes
+- 📊 **Analytics**: Logs detalhados de alterações
 
-There are several ways of editing your application.
+## 🛠️ **Setup Local**
 
-**Use Lovable**
+### **1. Clonar e Instalar**
+```bash
+git clone https://github.com/breakmysoull/inventario.git
+cd inventario
+npm install
+```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/188d51d9-41c6-4364-b28e-2b37593c59cd) and start prompting.
+### **2. Configurar Variáveis de Ambiente**
+```bash
+cp .env.example .env
+```
 
-Changes made via Lovable will be committed automatically to this repo.
+Preencha o `.env` com suas credenciais Firebase:
+```env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### **3. Executar Localmente**
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 🔥 **Deploy Firebase**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### **1. Setup Firebase**
+```bash
+# Login
+npx firebase login
 
-**Use GitHub Codespaces**
+# Inicializar projeto
+npx firebase init
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Selecione:
+# - Hosting
+# - Firestore
+# - Conecte ao seu projeto Firebase
+```
 
-## What technologies are used for this project?
+### **2. Deploy**
+```bash
+# Build e deploy
+npm run deploy
 
-This project is built with:
+# Ou apenas deploy
+npm run firebase:deploy
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📋 **Scripts Disponíveis**
 
-## How can I deploy this project?
+```bash
+npm run dev          # Servidor desenvolvimento
+npm run build        # Build produção
+npm run deploy       # Build + Deploy Firebase
+npm run firebase:deploy  # Deploy direto
+npm run firebase:serve   # Preview local
+```
 
-Simply open [Lovable](https://lovable.dev/projects/188d51d9-41c6-4364-b28e-2b37593c59cd) and click on Share -> Publish.
+## 🏗️ **Estrutura do Projeto**
 
-## Can I connect a custom domain to my Lovable project?
+```
+src/
+├── components/        # Componentes React
+├── hooks/            # Custom hooks
+├── services/         # APIs e serviços
+├── types/            # Definições TypeScript
+├── config/           # Configurações Firebase
+└── utils/            # Utilitários
+```
 
-Yes, you can!
+## 🔧 **Configuração Firebase**
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### **1. Criar Projeto**
+1. Acesse [Firebase Console](https://console.firebase.google.com)
+2. Crie novo projeto
+3. Ative Firestore e Hosting
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### **2. Configurar Firestore**
+- Regras de segurança em `firestore.rules`
+- Índices em `firestore.indexes.json`
+
+### **3. Google Sheets API (Opcional)**
+1. [Google Cloud Console](https://console.cloud.google.com)
+2. Ativar Google Sheets API
+3. Criar credenciais OAuth 2.0
+
+## 🎯 **Como Usar**
+
+### **Comandos Básicos**
+```
+Tomate 5, Batata 3    # Adicionar itens
+/exportar             # Baixar planilha
+/help                 # Ajuda
+```
+
+### **Funcionalidades**
+- **Adicionar**: Soma às quantidades existentes
+- **Atualizar**: Substitui quantidades
+- **Sugestões**: Auto-correção para itens não encontrados
+- **Export/Import**: Excel (.xlsx)
+
+## 🌐 **Links**
+
+- **Demo**: [Em breve]
+- **GitHub**: https://github.com/breakmysoull/inventario
+- **Firebase**: [Seu projeto Firebase]
+
+## 📞 **Suporte**
+
+Para dúvidas ou problemas, abra uma [issue](https://github.com/breakmysoull/inventario/issues).
+
+---
+
+**Desenvolvido com ❤️ usando React + Firebase**

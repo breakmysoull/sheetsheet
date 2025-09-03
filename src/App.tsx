@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
+import InventoryPage from "./pages/InventoryPage";
 
 const queryClient = new QueryClient();
 
@@ -14,9 +15,15 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<InventoryPage />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/help" element={<Help />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

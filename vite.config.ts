@@ -7,7 +7,15 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
+    port: 3000,
+    hmr: {
+      port: 3001,
+      overlay: false, // Disable error overlay that might cause refreshes
+    },
+    watch: {
+      usePolling: false, // Disable polling that can cause excessive refreshes
+      ignored: ['**/node_modules/**', '**/.git/**'],
+    },
   },
   plugins: [
     react(),
@@ -17,6 +25,16 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  // Reduce build warnings that might trigger refreshes
+  build: {
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress certain warnings
+        if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
+        warn(warning);
+      },
     },
   },
 }));

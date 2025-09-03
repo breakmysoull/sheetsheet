@@ -29,16 +29,31 @@ const Home = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('🚀 Iniciando importação do arquivo:', file.name);
+
     try {
       const parsedSheets = await XLSXHandler.parseFile(file);
+      console.log('📊 Planilhas parseadas:', parsedSheets);
+      console.log('📈 Total de planilhas:', parsedSheets.length);
+      
+      parsedSheets.forEach((sheet, index) => {
+        console.log(`📋 Planilha ${index + 1}: ${sheet.name} - ${sheet.items.length} itens`);
+        console.log('📦 Itens da planilha:', sheet.items);
+      });
+      
       loadSheets(parsedSheets);
+      
+      toast({
+        title: "✅ Importação concluída",
+        description: `${parsedSheets.length} aba(s) carregada(s) com ${parsedSheets.reduce((total, sheet) => total + sheet.items.length, 0)} itens`,
+      });
     } catch (error) {
       toast({
         title: "❌ Erro ao importar",
         description: "Verifique se o arquivo é uma planilha válida (.xlsx)",
         variant: "destructive",
       });
-      console.error('Error parsing file:', error);
+      console.error('❌ Error parsing file:', error);
     }
 
     // Reset input

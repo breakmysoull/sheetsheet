@@ -47,10 +47,10 @@ export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[40%]">Produto</TableHead>
-            <TableHead className="text-center w-[20%]">Quantidade</TableHead>
-            <TableHead className="text-center w-[20%] hidden sm:table-cell">Categoria</TableHead>
-            <TableHead className="text-center w-[20%]">Status</TableHead>
+            <TableHead className=" w-[40%]\>Produto</TableHead>
+            <TableHead className="text-center">Quantidade</TableHead>
+            <TableHead className="text-center hidden sm:table-cell">Categoria</TableHead>
+            <TableHead className="text-center">Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -81,8 +81,8 @@ export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
                   </div>
                 </TableCell>
                 
-                <TableCell className="text-center w-[20%]">
-                  <div className="flex flex-col items-center gap-1 min-h-[60px] justify-center">
+                <TableCell className="text-center">
+                  <div className="flex flex-col items-center gap-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-foreground">
                         {inventoryItem.quantity}
@@ -115,16 +115,38 @@ export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
                   </div>
                 </TableCell>
                 
-                <TableCell className="text-center w-[20%] hidden sm:table-cell">
-                  <div className="flex flex-col items-center gap-1 min-h-[60px] justify-center">
-                    <Badge variant="outline" className="text-xs max-w-[100px] truncate">
+                <TableCell className="text-center hidden sm:table-cell">
+                  <div className="flex flex-col items-center gap-1">
+                    <Badge variant="outline" className="text-xs">
                       {inventoryItem.category || inventoryItem.categoria || 'Geral'}
                     </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {(() => {
+                        const category = inventoryItem.category || inventoryItem.categoria || '';
+                        const categoryLower = category.toLowerCase();
+                        
+                        if (categoryLower.includes('hortifruti') || categoryLower.includes('hortifruit')) {
+                          return 'Hortifruti';
+                        } else if (categoryLower.includes('seco') || categoryLower.includes('sec')) {
+                          return 'Secos';
+                        } else if (categoryLower.includes('freezer') || categoryLower.includes('congelado')) {
+                          return 'Freezer';
+                        } else if (categoryLower.includes('bebida') || categoryLower.includes('drink')) {
+                          return 'Bebidas';
+                        } else if (categoryLower.includes('carne') || categoryLower.includes('meat')) {
+                          return 'Carnes';
+                        } else if (categoryLower.includes('laticinios') || categoryLower.includes('dairy')) {
+                          return 'Laticínios';
+                        } else {
+                          return category ? 'Diversos' : '';
+                        }
+                      })()}
+                    </span>
                   </div>
                 </TableCell>
                 
-                <TableCell className="text-center w-[20%]">
-                  <div className="flex flex-col items-center gap-1 min-h-[60px] justify-center">
+                <TableCell className="text-center">
+                  <div className="flex flex-col items-center gap-1">
                     {inventoryItem.lastUpdated && (
                       <span className="text-xs text-muted-foreground">
                         {new Date(inventoryItem.lastUpdated).toLocaleDateString('pt-BR', {

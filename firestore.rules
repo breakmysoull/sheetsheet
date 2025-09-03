@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regras para inventário - permitir leitura e escrita para usuários autenticados
+    match /inventory/{document=**} {
+      allow read, write: if true; // Para desenvolvimento - depois podemos restringir
+    }
+    
+    // Regras para planilhas
+    match /sheets/{document=**} {
+      allow read, write: if true; // Para desenvolvimento
+    }
+    
+    // Regras para logs de atualização
+    match /updateLogs/{document=**} {
+      allow read, write: if true; // Para desenvolvimento
+    }
+  }
+} 

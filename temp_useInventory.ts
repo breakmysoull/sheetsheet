@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+﻿import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Sheet, InventoryItem, UpdateLog } from '@/types/inventory';
 import { toast } from '@/hooks/use-toast';
 
@@ -40,7 +40,7 @@ export const useInventory = () => {
     console.log('📊 Total de planilhas:', newSheets.length);
     
     newSheets.forEach((sheet, index) => {
-      console.log(`📋 Planilha ${index}: ${sheet.name} com ${sheet.items.length} itens`);
+      console.log(📋 Planilha :  com  itens);
       if (sheet.items.length > 0) {
         console.log('📦 Primeiro item:', sheet.items[0]);
       }
@@ -85,7 +85,7 @@ export const useInventory = () => {
           usuario: 'Usuário',
           dataHora: new Date().toISOString(),
           // Manter compatibilidade
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          id: Date.now().toString(),
           itemName: item.name,
           change: operation === 'add' ? quantity : item.quantity - oldQuantity,
           timestamp: new Date(),
@@ -97,7 +97,7 @@ export const useInventory = () => {
       } else {
         // Create new item if not found
         const newItem: InventoryItem = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          id: Date.now().toString(),
           name: itemName,
           quantity: quantity,
           unit: 'un',
@@ -115,7 +115,7 @@ export const useInventory = () => {
           usuario: 'Usuário',
           dataHora: new Date().toISOString(),
           // Manter compatibilidade
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          id: Date.now().toString(),
           itemName: itemName,
           change: quantity,
           timestamp: new Date(),
@@ -129,6 +129,100 @@ export const useInventory = () => {
       return newSheets;
     });
   }, [activeSheetIndex]);
+
+  const updateItemInAllSheets = useCallback((itemName: string, quantity: number, operation: 'add' | 'set' = 'add') => {
+    setSheets(prevSheets => {
+      const newSheets = [...prevSheets];
+      let totalUpdated = 0;
+      const updatedSheets: string[] = [];
+
+      newSheets.forEach((sheet, sheetIndex) => {
+        // Find item by name (case-insensitive, partial match)
+        const itemIndex = sheet.items.findIndex(item => 
+          item.name.toLowerCase().includes(itemName.toLowerCase()) ||
+          itemName.toLowerCase().includes(item.name.toLowerCase())
+        );
+        
+        if (itemIndex !== -1) {
+          const item = sheet.items[itemIndex];
+          const oldQuantity = item.quantity;
+          
+          if (operation === 'add') {
+            item.quantity += quantity;
+          } else {
+            item.quantity = quantity;
+          }
+          
+          item.lastUpdated = new Date();
+          item.updatedBy = 'Usuário';
+          
+          totalUpdated++;
+          updatedSheets.push(sheet.name);
+          
+          // Add to update log
+          const log: UpdateLog = {
+            item: item.name,
+            quantidadeAlterada: operation === 'add' ? quantity : item.quantity - oldQuantity,
+            novaQuantidade: item.quantity,
+            usuario: 'Usuário',
+            dataHora: new Date().toISOString(),
+            // Manter compatibilidade
+            id: Date.now().toString() + sheetIndex,
+            itemName: item.name,
+            change: operation === 'add' ? quantity : item.quantity - oldQuantity,
+            timestamp: new Date(),
+            updatedBy: 'Usuário',
+            type: operation
+          };
+          
+          setUpdateLogs(prev => [log, ...prev].slice(0, 50));
+        } else {
+          // Create new item if not found in this sheet
+          const newItem: InventoryItem = {
+            id: Date.now().toString() + sheetIndex,
+            name: itemName,
+            quantity: quantity,
+            unit: 'un',
+            category: sheet.name,
+            lastUpdated: new Date(),
+            updatedBy: 'Usuário'
+          };
+          
+          sheet.items.push(newItem);
+          totalUpdated++;
+          updatedSheets.push(sheet.name);
+          
+          const log: UpdateLog = {
+            item: itemName,
+            quantidadeAlterada: quantity,
+            novaQuantidade: quantity,
+            usuario: 'Usuário',
+            dataHora: new Date().toISOString(),
+            // Manter compatibilidade
+            id: Date.now().toString() + sheetIndex,
+            itemName: itemName,
+            change: quantity,
+            timestamp: new Date(),
+            updatedBy: 'Usuário',
+            type: 'add'
+          };
+          
+          setUpdateLogs(prev => [log, ...prev].slice(0, 50));
+        }
+      });
+
+      // Show summary toast
+      if (totalUpdated > 0) {
+        const operationText = operation === 'add' ? 'adicionado' : 'atualizado';
+        toast({
+          title: ✅ Item  em  planilha(s),
+          description: ${itemName} em: ,
+        });
+      }
+      
+      return newSheets;
+    });
+  }, []);
   
   const filteredItems = useMemo(() => {
     return sheets[activeSheetIndex]?.items.filter(item =>
@@ -146,5 +240,6 @@ export const useInventory = () => {
     filteredItems,
     loadSheets,
     updateItem,
+    updateItemInAllSheets,
   };
 };

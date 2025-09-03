@@ -85,7 +85,7 @@ export const useInventory = () => {
           usuario: 'Usuário',
           dataHora: new Date().toISOString(),
           // Manter compatibilidade
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          id: Date.now().toString(),
           itemName: item.name,
           change: operation === 'add' ? quantity : item.quantity - oldQuantity,
           timestamp: new Date(),
@@ -97,7 +97,7 @@ export const useInventory = () => {
       } else {
         // Create new item if not found
         const newItem: InventoryItem = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          id: Date.now().toString(),
           name: itemName,
           quantity: quantity,
           unit: 'un',
@@ -115,7 +115,7 @@ export const useInventory = () => {
           usuario: 'Usuário',
           dataHora: new Date().toISOString(),
           // Manter compatibilidade
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          id: Date.now().toString(),
           itemName: itemName,
           change: quantity,
           timestamp: new Date(),
