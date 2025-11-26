@@ -148,8 +148,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    try {
+      if (supabase?.auth) {
+        await supabase.auth.signOut()
+      }
+    } catch {}
+    try {
+      localStorage.removeItem('auth_role')
+      localStorage.removeItem('kitchen_code')
+    } catch {}
     setUser(null)
+    setRole('funcionario')
+    setPermissions(computePermissions('funcionario'))
   }
 
   const can = (perm: string) => !!permissions[perm]

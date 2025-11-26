@@ -249,12 +249,12 @@ const InventoryPage: React.FC = () => {
             </p>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 sm:justify-end">
             <Button
               onClick={() => navigate(-1)}
               variant="outline"
               size="sm"
-              className="shrink-0"
+              className="shrink-0 whitespace-nowrap"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
@@ -264,7 +264,7 @@ const InventoryPage: React.FC = () => {
               onClick={handleExport}
               variant="outline"
               size="sm"
-              className="shrink-0"
+              className="shrink-0 whitespace-nowrap"
               disabled={!can('inventory.export')}
             >
               <Download className="h-4 w-4 mr-2" />
@@ -274,7 +274,7 @@ const InventoryPage: React.FC = () => {
               onClick={handleBackup}
               variant="outline"
               size="sm"
-              className="shrink-0"
+              className="shrink-0 whitespace-nowrap"
             >
               Backup
             </Button>

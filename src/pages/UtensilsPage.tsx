@@ -82,7 +82,7 @@ const UtensilsPage: React.FC = () => {
                 <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ex: afiar semanalmente" />
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{filtered.length} utensílio(s)</Badge>
               <Select value={filter} onValueChange={(v) => setFilter(v as ('all' | UtensilStatus))}>
                 <SelectTrigger className="w-48">
@@ -96,7 +96,8 @@ const UtensilsPage: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[560px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
@@ -120,6 +121,7 @@ const UtensilsPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

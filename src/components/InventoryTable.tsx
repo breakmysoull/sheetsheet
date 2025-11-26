@@ -48,7 +48,8 @@ export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
 
   return (
     <ScrollArea className="h-[calc(100vh-320px)] md:h-[calc(100vh-280px)]">
-      <Table>
+      <div className="overflow-x-auto">
+      <Table className="min-w-[360px]">
         <TableHeader>
           <TableRow>
             <TableHead className="w-[40%]">Produto</TableHead>
@@ -166,6 +167,7 @@ export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
           })}
         </TableBody>
       </Table>
+      </div>
       <ItemHistoryModal itemName={selectedItem} logs={updateLogs} open={open} onOpenChange={setOpen} />
     </ScrollArea>
   );

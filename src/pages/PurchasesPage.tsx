@@ -61,7 +61,7 @@ const PurchasesPage: React.FC = () => {
                 <Label>Item</Label>
                 <Input {...register('itemName')} />
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Quantidade</Label>
                   <Input type="number" step="0.01" min="0" {...register('quantity', { valueAsNumber: true })} />
@@ -75,7 +75,7 @@ const PurchasesPage: React.FC = () => {
                   <Input type="number" step="0.01" min="0" {...register('price', { valueAsNumber: true })} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Fornecedor</Label>
                   <Input {...register('supplier')} />
@@ -97,7 +97,8 @@ const PurchasesPage: React.FC = () => {
         <Card>
           <CardHeader><CardTitle>Histórico de Compras</CardTitle></CardHeader>
           <CardContent>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[720px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
@@ -121,6 +122,7 @@ const PurchasesPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

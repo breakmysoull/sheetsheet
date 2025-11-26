@@ -98,7 +98,8 @@ const DashboardPage: React.FC = () => {
           <CardHeader className="pb-3"><CardTitle>Produtos abaixo do mínimo</CardTitle></CardHeader>
           <CardContent>
             <Badge variant="destructive">{belowMin.length}</Badge>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[360px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
@@ -112,13 +113,15 @@ const DashboardPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3"><CardTitle>Últimas 10 movimentações</CardTitle></CardHeader>
           <CardContent>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[480px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
@@ -133,6 +136,7 @@ const DashboardPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 
@@ -146,7 +150,7 @@ const DashboardPage: React.FC = () => {
         <Card>
           <CardHeader className="pb-3"><CardTitle>Consumo do dia / mês</CardTitle></CardHeader>
           <CardContent>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <Badge variant="outline">Dia: {qtyConsumedToday}</Badge>
               <Badge variant="outline">Mês: {qtyConsumedMonth}</Badge>
             </div>
@@ -156,7 +160,7 @@ const DashboardPage: React.FC = () => {
         <Card>
           <CardHeader className="pb-3"><CardTitle>CMV (dia / mês)</CardTitle></CardHeader>
           <CardContent>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <Badge variant="secondary">R$ {cmvDia.toFixed(2)}</Badge>
               <Badge variant="secondary">R$ {cmvMes.toFixed(2)}</Badge>
             </div>
@@ -166,7 +170,8 @@ const DashboardPage: React.FC = () => {
         <Card>
           <CardHeader className="pb-3"><CardTitle>Itens com maior custo unitário</CardTitle></CardHeader>
           <CardContent>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[360px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
@@ -179,13 +184,15 @@ const DashboardPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3"><CardTitle>Sugestão de lista de compras</CardTitle></CardHeader>
           <CardContent>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[360px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
@@ -198,13 +205,15 @@ const DashboardPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3"><CardTitle>Custo por prato (por porção)</CardTitle></CardHeader>
           <CardContent>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[360px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Receita</TableHead>
@@ -217,6 +226,7 @@ const DashboardPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 

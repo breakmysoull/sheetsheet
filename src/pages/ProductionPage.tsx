@@ -29,7 +29,7 @@ const ProductionPage: React.FC = () => {
         <Card>
           <CardHeader><CardTitle>Registrar Produção</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Receita</Label>
                 <Select value={recipeId} onValueChange={setRecipeId}>
@@ -47,7 +47,8 @@ const ProductionPage: React.FC = () => {
               </div>
             </div>
             {recipe && factor > 0 && (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[480px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item</TableHead>
@@ -65,6 +66,7 @@ const ProductionPage: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
             <Button disabled={!recipe || factor <= 0} onClick={() => registerProduction(recipeId, portions)}>Confirmar e descontar</Button>
           </CardContent>

@@ -32,14 +32,14 @@ const ChecklistPage: React.FC = () => {
         <Card>
           <CardHeader><CardTitle>Checklist Diário</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Data</Label>
                 <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
               </div>
-              <div className="flex items-end gap-2">
-                <Badge variant="secondary">{done}/{total} concluídos</Badge>
-                <Button variant="outline" onClick={() => resetChecklist(date)}>Resetar dia</Button>
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                <Badge variant="secondary" className="text-xs px-2 py-1">{done}/{total} concluídos</Badge>
+                <Button size="sm" variant="outline" className="whitespace-nowrap" onClick={() => resetChecklist(date)}>Resetar dia</Button>
               </div>
             </div>
 
@@ -48,28 +48,30 @@ const ChecklistPage: React.FC = () => {
                 <Card key={cat.name}>
                   <CardHeader className="pb-2"><CardTitle>{cat.name}</CardTitle></CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button size="sm" variant="outline" onClick={() => setChecklistCategoryAll(date, cat.name, true)}>Marcar tudo</Button>
                       <Button size="sm" variant="outline" onClick={() => setChecklistCategoryAll(date, cat.name, false)}>Limpar</Button>
                     </div>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Tarefa</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {cat.items.map(item => (
-                          <TableRow key={item.id}>
-                            <TableCell>
-                              <Checkbox checked={item.checked} onCheckedChange={(v) => toggleChecklistItem(date, cat.name, item.id, Boolean(v))} />
-                            </TableCell>
-                            <TableCell>{item.label}</TableCell>
+                    <div className="overflow-x-auto">
+                      <Table className="min-w-[320px]">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Tarefa</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {cat.items.map(item => (
+                            <TableRow key={item.id}>
+                              <TableCell>
+                                <Checkbox checked={item.checked} onCheckedChange={(v) => toggleChecklistItem(date, cat.name, item.id, Boolean(v))} />
+                              </TableCell>
+                              <TableCell>{item.label}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               ))}

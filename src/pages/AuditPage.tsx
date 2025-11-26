@@ -30,9 +30,10 @@ const AuditPage: React.FC = () => {
           <CardHeader className="pb-3">
             <CardTitle>Auditoria de Movimentações</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <Input placeholder="Buscar por item, usuário, tipo, motivo" value={q} onChange={e => setQ(e.target.value)} />
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
@@ -58,6 +59,7 @@ const AuditPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -81,7 +81,8 @@ const ForecastPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{recommendations.length} item(ns) recomendados</Badge>
             </div>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[500px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
@@ -103,6 +104,7 @@ const ForecastPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

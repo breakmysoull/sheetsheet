@@ -77,12 +77,12 @@ const InventoryCheckPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row gap-3 sm:gap-0 items-start sm:items-center justify-between">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Inventário diário — {selectedDailyPlaza || 'Praça'}{selectedResponsible ? ` (${selectedResponsible})` : ''}</h1>
             <p className="text-muted-foreground">Ajuste o estoque com base na contagem da praça selecionada</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
@@ -101,7 +101,7 @@ const InventoryCheckPage: React.FC = () => {
               {((itemsToDisplay || []).length === 0 && extraItems.length === 0) && (
                 <div className="mb-4 text-sm text-muted-foreground">Nenhum item cadastrado para esta praça. Adicione abaixo.</div>
               )}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex flex-wrap items-center gap-2 mb-4">
                 <Select value={newIngredient} onValueChange={setNewIngredient}>
                   <SelectTrigger className="max-w-sm"><SelectValue placeholder="Adicionar item do cardápio" /></SelectTrigger>
                   <SelectContent>
@@ -112,7 +112,8 @@ const InventoryCheckPage: React.FC = () => {
                 </Select>
                 <Button variant="secondary" onClick={addItem}>Adicionar</Button>
               </div>
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[360px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Produto</TableHead>
@@ -138,6 +139,7 @@ const InventoryCheckPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+              </div>
           </CardContent>
         </Card>
       </div>

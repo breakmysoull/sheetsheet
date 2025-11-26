@@ -66,7 +66,7 @@ const ReportsPage: React.FC = () => {
         </div>
         <Card>
           <CardHeader><CardTitle>Relatórios e Exportação</CardTitle></CardHeader>
-          <CardContent className="flex gap-4">
+          <CardContent className="flex flex-wrap gap-4">
             <Button onClick={handleExportReports}>Exportar XLSX</Button>
           </CardContent>
         </Card>
@@ -74,7 +74,8 @@ const ReportsPage: React.FC = () => {
         <Card>
           <CardHeader><CardTitle>Consumo diário (top 10)</CardTitle></CardHeader>
           <CardContent>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[360px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
@@ -92,13 +93,15 @@ const ReportsPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader><CardTitle>Consumo semanal (top 10)</CardTitle></CardHeader>
           <CardContent>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[360px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
@@ -116,6 +119,7 @@ const ReportsPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

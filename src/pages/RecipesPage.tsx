@@ -60,7 +60,7 @@ const RecipesPage: React.FC = () => {
                 <Label>Nome</Label>
                 <Input {...register('name')} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Rendimento</Label>
                   <Input type="number" step="1" min="1" {...register('yield', { valueAsNumber: true })} />
@@ -74,11 +74,13 @@ const RecipesPage: React.FC = () => {
                 <Label>Ingredientes</Label>
                 <div className="space-y-2">
                   {fields.map((f, idx) => (
-                    <div key={f.id} className="grid grid-cols-3 gap-2">
+                    <div key={f.id} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <Input list="items" placeholder="Item" {...register(`ingredients.${idx}.itemName` as const)} />
                       <Input type="number" step="0.01" min="0" placeholder="Qtd" {...register(`ingredients.${idx}.quantity` as const, { valueAsNumber: true })} />
                       <Input placeholder="Unidade" {...register(`ingredients.${idx}.unit` as const)} />
-                      <Button type="button" variant="outline" onClick={() => remove(idx)}>Remover</Button>
+                      <Button type="button" variant="outline" onClick={() => remove(idx)}>
+                        Remover
+                      </Button>
                     </div>
                   ))}
                   <Button type="button" onClick={() => append({ itemName: '', quantity: 0, unit: 'un' })}>Adicionar ingrediente</Button>
@@ -95,7 +97,8 @@ const RecipesPage: React.FC = () => {
         <Card>
           <CardHeader><CardTitle>Receitas</CardTitle></CardHeader>
           <CardContent>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[420px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
@@ -113,6 +116,7 @@ const RecipesPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
