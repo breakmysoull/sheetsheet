@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { InventoryItem, UpdateLog } from '@/types/inventory';
 
-import { TrendingUp, TrendingDown, Package2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Package2, History } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -12,6 +12,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ItemHistoryModal } from '@/components/ItemHistoryModal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface InventoryTableProps {
@@ -20,6 +22,8 @@ interface InventoryTableProps {
 }
 
 export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
+  const [open, setOpen] = React.useState(false);
+  const [selectedItem, setSelectedItem] = React.useState<string>('');
   const getRecentUpdate = React.useCallback((itemName: string) => {
     return updateLogs.find(log => log.itemName === itemName || log.item === itemName);
   }, [updateLogs]);
@@ -51,6 +55,7 @@ export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
             <TableHead className="text-center w-[20%]">Quantidade</TableHead>
             <TableHead className="text-center w-[20%] hidden sm:table-cell">Categoria</TableHead>
             <TableHead className="text-center w-[20%]">Status</TableHead>
+            <TableHead className="text-center w-[20%] hidden md:table-cell">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -67,6 +72,11 @@ export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     <span className="text-foreground">{inventoryItem.name}</span>
+                    {typeof inventoryItem.minimum === 'number' && inventoryItem.minimum > 0 && inventoryItem.quantity < inventoryItem.minimum && (
+                      <Badge variant="destructive" className="text-xs">
+                        Crítico
+                      </Badge>
+                    )}
                     {isRecent && (
                       <motion.div
                         initial={{ scale: 0 }}
@@ -87,6 +97,9 @@ export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
                       <span className="font-semibold text-foreground">
                         {inventoryItem.quantity}
                       </span>
+                      {typeof inventoryItem.minimum === 'number' && inventoryItem.minimum > 0 && (
+                        <span className="text-xs text-muted-foreground">/ min {inventoryItem.minimum}</span>
+                      )}
                       {recentUpdate && (
                         <motion.span
                           initial={{ opacity: 0, x: -10 }}
@@ -137,11 +150,23 @@ export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
                     )}
                   </div>
                 </TableCell>
+
+                <TableCell className="text-center w-[20%] hidden md:table-cell">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setSelectedItem(inventoryItem.name); setOpen(true); }}
+                  >
+                    <History className="h-4 w-4 mr-2" />
+                    Histórico
+                  </Button>
+                </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
       </Table>
+      <ItemHistoryModal itemName={selectedItem} logs={updateLogs} open={open} onOpenChange={setOpen} />
     </ScrollArea>
   );
 };

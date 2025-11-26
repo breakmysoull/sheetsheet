@@ -33,6 +33,10 @@ const updateFormSchema = z.object({
   category: z.string()
     .min(1, 'Categoria é obrigatória')
     .max(50, 'Categoria muito longa'),
+  adjustmentType: z.enum(['entrada', 'saida', 'correcao']),
+  reason: z.string().min(1, 'Motivo é obrigatório').max(200)
+  ,minimum: z.number().min(0, 'Mínimo deve ser positivo').default(0),
+  unitCost: z.number().min(0, 'Custo deve ser positivo').default(0)
 });
 
 type UpdateFormData = z.infer<typeof updateFormSchema>;
@@ -43,6 +47,10 @@ interface UpdateFormProps {
     quantity: number;
     unit: string;
     category: string;
+    adjustmentType: 'entrada' | 'saida' | 'correcao';
+    reason: string;
+    minimum: number;
+    unitCost: number;
   }) => void;
   existingCategories?: string[];
   isLoading?: boolean;
@@ -79,7 +87,11 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
       name: '',
       quantity: 0,
       unit: 'un',
-      category: ''
+      category: '',
+      adjustmentType: 'entrada',
+      reason: '',
+      minimum: 0,
+      unitCost: 0
     }
   });
 
@@ -89,7 +101,11 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
         name: data.name,
         quantity: data.quantity,
         unit: data.unit,
-        category: data.category
+        category: data.category,
+        adjustmentType: data.adjustmentType,
+        reason: data.reason,
+        minimum: data.minimum,
+        unitCost: data.unitCost
       });
       reset();
       toast({
@@ -215,6 +231,70 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
                 </Select>
                 {errors.unit && (
                   <p className="text-sm text-red-500">{errors.unit.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="minimum">Mínimo *</Label>
+                <Input
+                  id="minimum"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  placeholder="0"
+                  {...register('minimum', { valueAsNumber: true })}
+                  className={errors.minimum ? 'border-red-500' : ''}
+                />
+                {errors.minimum && (
+                  <p className="text-sm text-red-500">{errors.minimum.message as string}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unitCost">Custo Unitário (R$)</Label>
+                <Input
+                  id="unitCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  {...register('unitCost', { valueAsNumber: true })}
+                  className={errors.unitCost ? 'border-red-500' : ''}
+                />
+                {errors.unitCost && (
+                  <p className="text-sm text-red-500">{errors.unitCost.message as string}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="adjustmentType">Tipo de ajuste *</Label>
+                <Select onValueChange={(value) => setValue('adjustmentType', value as any)}>
+                  <SelectTrigger className={errors.adjustmentType ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="entrada">Entrada</SelectItem>
+                    <SelectItem value="saida">Saída</SelectItem>
+                    <SelectItem value="correcao">Correção</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.adjustmentType && (
+                  <p className="text-sm text-red-500">{errors.adjustmentType.message as string}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reason">Motivo *</Label>
+                <Input
+                  id="reason"
+                  placeholder="Ex: compra, consumo, ajuste mensal"
+                  {...register('reason')}
+                  className={errors.reason ? 'border-red-500' : ''}
+                />
+                {errors.reason && (
+                  <p className="text-sm text-red-500">{errors.reason.message}</p>
                 )}
               </div>
             </div>

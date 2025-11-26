@@ -6,10 +6,12 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
-    port: 3000,
+    host: true,
+    port: 3002,
+    strictPort: true,
     hmr: {
-      port: 3001,
+      port: 3002,
+      clientPort: 3002,
       overlay: false, // Disable error overlay that might cause refreshes
     },
     watch: {

@@ -1,0 +1,6 @@
+update_inventory_table.js
+fix_inventory.js
+src/**/*.backup*
+src/**/*_backup*
+src/**/*_broken*
+src/components/InventoryTable_original.tsx

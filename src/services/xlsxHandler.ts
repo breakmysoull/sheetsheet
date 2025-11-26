@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { Sheet, InventoryItem } from '@/types/inventory';
+import { Sheet, InventoryItem, UpdateLog } from '@/types/inventory';
 
 export class XLSXHandler {
   static async parseFile(file: File): Promise<Sheet[]> {
@@ -38,7 +38,7 @@ export class XLSXHandler {
               let name = '';
               let quantity = 0;
               let unit = 'un';
-              let category = sheetName;
+              const category = sheetName;
               
               // Estratégia 1: Planilha "Estoque Freezer" - formato especial
               if (sheetName.toLowerCase().includes('freezer') || sheetName.toLowerCase().includes('estoque')) {
@@ -193,5 +193,76 @@ export class XLSXHandler {
     });
     
     XLSX.writeFile(workbook, filename);
+  }
+
+  static exportReports(sheets: Sheet[], updateLogs: UpdateLog[], filename: string = 'relatorios_inventario.xlsx') {
+    const workbook = XLSX.utils.book_new()
+    const items = sheets.flatMap(s => s.items)
+
+    const estoqueAtual = items.map(i => ({
+      Produto: i.name,
+      Quantidade: i.quantity,
+      Unidade: i.unit || 'un',
+      Categoria: i.category || '',
+      Minimo: i.minimum ?? 0,
+      CustoUnitario: i.unitCost ?? 0
+    }))
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(estoqueAtual), 'Estoque Atual')
+
+    const toDate = (l: UpdateLog) => l.timestamp ? new Date(l.timestamp) : new Date(l.dataHora)
+    const diffDays = (d: Date) => (new Date().getTime() - d.getTime()) / (1000 * 60 * 60 * 24)
+    const isSubtract = (l: UpdateLog) => (l.type === 'subtract')
+
+    const daily = updateLogs.filter((l) => {
+      const dt = toDate(l)
+      const now = new Date()
+      return dt.getDate() === now.getDate() && dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear() && isSubtract(l)
+    })
+    const dailyAgg: Record<string, number> = {}
+    daily.forEach((l) => {
+      const name = (l.itemName || l.item || '').toLowerCase()
+      const qty = Math.abs(Number(l.change ?? l.quantidadeAlterada) || 0)
+      dailyAgg[name] = (dailyAgg[name] || 0) + qty
+    })
+    const dailyRows = Object.entries(dailyAgg).map(([name, qty]) => ({ Item: name, Quantidade: qty }))
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(dailyRows), 'Consumo Diário')
+
+    const weekly = updateLogs.filter((l) => diffDays(toDate(l)) <= 7 && isSubtract(l))
+    const weeklyAgg: Record<string, number> = {}
+    weekly.forEach((l) => {
+      const name = (l.itemName || l.item || '').toLowerCase()
+      const qty = Math.abs(Number(l.change ?? l.quantidadeAlterada) || 0)
+      weeklyAgg[name] = (weeklyAgg[name] || 0) + qty
+    })
+    const weeklyRows = Object.entries(weeklyAgg).map(([name, qty]) => ({ Item: name, Quantidade: qty }))
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(weeklyRows), 'Consumo Semanal')
+
+    const topUsados = Object.entries(weeklyAgg).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([name, qty]) => ({ Item: name, Quantidade: qty }))
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(topUsados), 'Top Usados')
+
+    const cmvAgg: Record<string, number> = {}
+    Object.entries(weeklyAgg).forEach(([name, qty]) => {
+      const item = items.find(i => i.name.toLowerCase() === name)
+      const cost = item?.unitCost || 0
+      cmvAgg[name] = qty * cost
+    })
+    const cmvRows = Object.entries(cmvAgg).map(([name, value]) => ({ Item: name, CMV: value }))
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(cmvRows), 'CMV')
+
+    const projRows = items.map(i => {
+      const name = i.name.toLowerCase()
+      const usage = weeklyAgg[name] || 0
+      const avgDaily = usage / 7
+      const daysLeft = avgDaily > 0 ? (i.quantity / avgDaily) : null
+      return {
+        Item: i.name,
+        Quantidade: i.quantity,
+        ConsumoDiarioMedio: Number(avgDaily.toFixed(2)),
+        DiasRestantes: daysLeft ? Number(daysLeft.toFixed(1)) : 'N/A'
+      }
+    })
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(projRows), 'Projecoes')
+
+    XLSX.writeFile(workbook, filename)
   }
 }

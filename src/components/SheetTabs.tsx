@@ -16,7 +16,7 @@ interface SheetTabsProps {
 export const SheetTabs = ({ sheets, activeIndex, onTabChange }: SheetTabsProps) => {
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
-  if (sheets.length === 0) return null;
+  const isEmpty = sheets.length === 0;
 
   const scrollToTab = React.useCallback((index: number) => {
     const container = scrollContainerRef.current;
@@ -69,6 +69,8 @@ export const SheetTabs = ({ sheets, activeIndex, onTabChange }: SheetTabsProps) 
     onTabChange(index);
     scrollToTab(index);
   }, [onTabChange, scrollToTab]);
+
+  if (isEmpty) return null;
 
   return (
     <motion.div
