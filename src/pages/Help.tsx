@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   FileSpreadsheet, 
@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 
 const Help = () => {
+  const navigate = useNavigate()
   const features = [
     {
       icon: FileSpreadsheet,
@@ -58,11 +59,9 @@ const Help = () => {
       <header className="bg-gradient-hero border-b border-border">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-accent">
                 <HelpCircle className="h-6 w-6 text-accent-foreground" />
@@ -199,7 +198,7 @@ const Help = () => {
         </motion.section>
 
         <div className="text-center py-8">
-          <Link to="/">
+          <Link to="/inventory">
             <Button className="bg-gradient-primary hover:opacity-90">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao Inventário

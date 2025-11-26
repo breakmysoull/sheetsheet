@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 // Schema de validação conforme especificação
 const updateFormSchema = z.object({
@@ -71,6 +72,8 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
   existingCategories = [],
   isLoading = false
 }) => {
+  const { role } = useAuth();
+  const isAdmin = role === 'super_admin';
   const [quickMode, setQuickMode] = useState(false);
   const [bulkInput, setBulkInput] = useState('');
 
@@ -170,6 +173,7 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
             variant={quickMode ? "default" : "outline"}
             size="sm"
             onClick={() => setQuickMode(true)}
+            disabled={!isAdmin}
           >
             Modo Rápido
           </Button>
@@ -192,6 +196,7 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
                 placeholder="Ex: Tomate, Batata, Arroz..."
                 {...register('name')}
                 className={errors.name ? 'border-red-500' : ''}
+                disabled={!isAdmin}
               />
               {errors.name && (
                 <p className="text-sm text-red-500">{errors.name.message}</p>
@@ -219,8 +224,8 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
               {/* Unidade */}
               <div className="space-y-2">
                 <Label htmlFor="unit">Unidade *</Label>
-                <Select onValueChange={(value) => setValue('unit', value)}>
-                  <SelectTrigger className={errors.unit ? 'border-red-500' : ''}>
+              <Select onValueChange={(value) => setValue('unit', value)}>
+                  <SelectTrigger className={errors.unit ? 'border-red-500' : ''} disabled={!isAdmin}>
                     <SelectValue placeholder="Selecione a unidade" />
                   </SelectTrigger>
                   <SelectContent>
@@ -238,30 +243,32 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="minimum">Mínimo *</Label>
-                <Input
-                  id="minimum"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  placeholder="0"
-                  {...register('minimum', { valueAsNumber: true })}
-                  className={errors.minimum ? 'border-red-500' : ''}
-                />
+              <Input
+                id="minimum"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0"
+                {...register('minimum', { valueAsNumber: true })}
+                className={errors.minimum ? 'border-red-500' : ''}
+                disabled={!isAdmin}
+              />
                 {errors.minimum && (
                   <p className="text-sm text-red-500">{errors.minimum.message as string}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="unitCost">Custo Unitário (R$)</Label>
-                <Input
-                  id="unitCost"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  {...register('unitCost', { valueAsNumber: true })}
-                  className={errors.unitCost ? 'border-red-500' : ''}
-                />
+              <Input
+                id="unitCost"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                {...register('unitCost', { valueAsNumber: true })}
+                className={errors.unitCost ? 'border-red-500' : ''}
+                disabled={!isAdmin}
+              />
                 {errors.unitCost && (
                   <p className="text-sm text-red-500">{errors.unitCost.message as string}</p>
                 )}
@@ -271,7 +278,7 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="adjustmentType">Tipo de ajuste *</Label>
-                <Select onValueChange={(value) => setValue('adjustmentType', value as any)}>
+              <Select onValueChange={(value) => setValue('adjustmentType', value as any)}>
                   <SelectTrigger className={errors.adjustmentType ? 'border-red-500' : ''}>
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
@@ -287,12 +294,12 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="reason">Motivo *</Label>
-                <Input
-                  id="reason"
-                  placeholder="Ex: compra, consumo, ajuste mensal"
-                  {...register('reason')}
-                  className={errors.reason ? 'border-red-500' : ''}
-                />
+              <Input
+                id="reason"
+                placeholder="Ex: compra, consumo, ajuste mensal"
+                {...register('reason')}
+                className={errors.reason ? 'border-red-500' : ''}
+              />
                 {errors.reason && (
                   <p className="text-sm text-red-500">{errors.reason.message}</p>
                 )}
@@ -303,7 +310,7 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="category">Categoria *</Label>
               <Select onValueChange={(value) => setValue('category', value)}>
-                <SelectTrigger className={errors.category ? 'border-red-500' : ''}>
+                <SelectTrigger className={errors.category ? 'border-red-500' : ''} disabled={!isAdmin}>
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
@@ -320,7 +327,7 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
             <Button 
               type="submit" 
               className="w-full"
-              disabled={isLoading}
+              disabled={isLoading || !isAdmin}
             >
               <Plus className="h-4 w-4 mr-2" />
               {isLoading ? 'Adicionando...' : 'Adicionar Item'}
@@ -336,7 +343,7 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
               <div className="space-y-2">
                 <Label>Categoria Padrão</Label>
                 <Select onValueChange={(value) => setValue('category', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger disabled={!isAdmin}>
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
                   <SelectContent>
@@ -349,7 +356,7 @@ export const UpdateForm: React.FC<UpdateFormProps> = ({
               <div className="space-y-2">
                 <Label>Unidade Padrão</Label>
                 <Select onValueChange={(value) => setValue('unit', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger disabled={!isAdmin}>
                     <SelectValue placeholder="Unidade" />
                   </SelectTrigger>
                   <SelectContent>
@@ -374,6 +381,7 @@ Arroz 10 kg`}
                 onChange={(e) => setBulkInput(e.target.value)}
                 rows={6}
                 className="font-mono text-sm"
+                disabled={!isAdmin}
               />
               <p className="text-xs text-muted-foreground">
                 Formato: "Nome Quantidade [Unidade]" - um item por linha
@@ -383,7 +391,7 @@ Arroz 10 kg`}
             <Button 
               onClick={handleBulkSubmit}
               className="w-full"
-              disabled={!bulkInput.trim() || isLoading}
+              disabled={!bulkInput.trim() || isLoading || !isAdmin}
             >
               <Plus className="h-4 w-4 mr-2" />
               {isLoading ? 'Processando...' : 'Adicionar Itens em Lote'}

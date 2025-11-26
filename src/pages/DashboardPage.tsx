@@ -1,4 +1,7 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
 import { useInventory } from '@/hooks/useInventory'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -6,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 const DashboardPage: React.FC = () => {
   const { sheets, updateLogs, recipes } = useInventory()
+  const navigate = useNavigate()
   const items = sheets.flatMap(s => s.items)
   const belowMin = items.filter(i => typeof i.minimum === 'number' && i.minimum > 0 && i.quantity < i.minimum)
   const totalQty = items.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0)
@@ -83,6 +87,12 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="max-w-7xl mx-auto mb-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+      </div>
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-3"><CardTitle>Produtos abaixo do mínimo</CardTitle></CardHeader>

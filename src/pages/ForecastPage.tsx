@@ -1,4 +1,7 @@
 import React, { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -12,6 +15,7 @@ const daysAgo = (n: number) => {
 
 const ForecastPage: React.FC = () => {
   const { sheets, updateLogs } = useInventory()
+  const navigate = useNavigate()
 
   const items = useMemo(() => {
     return sheets.flatMap(s => s.items)
@@ -63,6 +67,12 @@ const ForecastPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-6xl mx-auto space-y-6">
+        <div>
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Previsão de Compra</CardTitle>
@@ -101,4 +111,3 @@ const ForecastPage: React.FC = () => {
 }
 
 export default ForecastPage
-

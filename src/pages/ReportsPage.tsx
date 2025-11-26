@@ -1,4 +1,6 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { useInventory } from '@/hooks/useInventory'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,6 +11,7 @@ import { XLSXHandler } from '@/services/xlsxHandler'
 const ReportsPage: React.FC = () => {
   const { sheets, updateLogs } = useInventory()
   const { role } = useAuth()
+  const navigate = useNavigate()
   const items = sheets.flatMap(s => s.items)
 
   const today = new Date()
@@ -35,6 +38,12 @@ const ReportsPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-background p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
+          <div className="mb-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+          </div>
           <Card>
             <CardHeader><CardTitle>Acesso restrito</CardTitle></CardHeader>
             <CardContent>
@@ -49,6 +58,12 @@ const ReportsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div>
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
         <Card>
           <CardHeader><CardTitle>Relatórios e Exportação</CardTitle></CardHeader>
           <CardContent className="flex gap-4">

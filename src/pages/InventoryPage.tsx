@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
-import { Package, Search, Filter, Plus, Download, BarChart3, MessageSquare, ScrollText, AlertTriangle, ClipboardList } from 'lucide-react';
-import { Wrench } from 'lucide-react';
-import { TrendingUp } from 'lucide-react';
+import { Package, Search, Filter, Plus, Download, BarChart3, MessageSquare, ScrollText, AlertTriangle, ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -244,7 +242,7 @@ const InventoryPage: React.FC = () => {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
               <Package className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-              Inventário SheetChef
+              Inventário Cozzi
             </h1>
             <p className="text-muted-foreground mt-1">
               Gerencie seu estoque de forma inteligente
@@ -252,6 +250,15 @@ const InventoryPage: React.FC = () => {
           </div>
           
           <div className="flex gap-2">
+            <Button
+              onClick={() => navigate(-1)}
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
             <ImportButton onImport={handleImport} />
             <Button
               onClick={handleExport}
@@ -270,90 +277,6 @@ const InventoryPage: React.FC = () => {
               className="shrink-0"
             >
               Backup
-            </Button>
-            <Button
-              onClick={() => undoLastChange()}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-            >
-              Desfazer última
-            </Button>
-            <Button
-              onClick={() => navigate('/inventory-check')}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-            >
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Inventário
-            </Button>
-            <Button
-              onClick={() => navigate('/audit')}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-            >
-              Auditoria
-            </Button>
-            <Button
-              onClick={() => navigate('/reports')}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-              disabled={!can('reports.viewMonthly')}
-            >
-              Relatórios
-            </Button>
-            <Button
-              onClick={() => navigate('/recipes')}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-            >
-              Receitas
-            </Button>
-            <Button
-              onClick={() => navigate('/production')}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-            >
-              Produção
-            </Button>
-            <Button
-              onClick={() => navigate('/purchases')}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-            >
-              Compras
-            </Button>
-            <Button
-              onClick={() => navigate('/checklist')}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-            >
-              Checklist
-            </Button>
-            <Button
-              onClick={() => navigate('/utensils')}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-            >
-              <Wrench className="h-4 w-4 mr-2" />
-              Utensílios
-            </Button>
-            <Button
-              onClick={() => navigate('/forecast')}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Previsão
             </Button>
           </div>
         </motion.div>

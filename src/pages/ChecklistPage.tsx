@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { useInventory } from '@/hooks/useInventory'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,10 +18,17 @@ const ChecklistPage: React.FC = () => {
   const checklist = useMemo(() => getChecklistForDate(date), [date, getChecklistForDate])
   const total = checklist.categories.reduce((sum, c) => sum + c.items.length, 0)
   const done = checklist.categories.reduce((sum, c) => sum + c.items.filter(i => i.checked).length, 0)
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div>
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
         <Card>
           <CardHeader><CardTitle>Checklist Diário</CardTitle></CardHeader>
           <CardContent className="space-y-4">

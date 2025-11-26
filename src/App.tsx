@@ -7,7 +7,6 @@ import Home from "./pages/Home";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import InventoryPage from "./pages/InventoryPage";
-import InventoryCheckPage from "./pages/InventoryCheckPage";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import AuditPage from "./pages/AuditPage";
@@ -20,6 +19,8 @@ import ChecklistPage from "./pages/ChecklistPage";
 import UtensilsPage from "./pages/UtensilsPage";
 import ForecastPage from "./pages/ForecastPage";
 import { useAuth } from "./context/AuthContext";
+import InventoryCheckPage from "./pages/InventoryCheckPage";
+import InventoryDailyPage from "./pages/InventoryDailyPage";
 
 const queryClient = new QueryClient();
 
@@ -41,11 +42,13 @@ const App = () => (
           }}
         >
           <Routes>
-            <Route path="/" element={<InventoryPage />} />
-            <Route path="/inventory-check" element={<InventoryCheckPage />} />
+            <Route path="/" element={<LoginPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/inventory-daily" element={<InventoryDailyPage />} />
+            <Route path="/inventory-daily-check" element={<InventoryCheckPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/audit" element={<ProtectedRoute perm="logs.viewAll" element={<AuditPage />} />} />
-            <Route path="/reports" element={<ProtectedRoute perm="reports.viewMonthly" element={<ReportsPage />} />} />
+            <Route path="/reports" element={<ReportsPage />} />
             <Route path="/recipes" element={<RecipesPage />} />
             <Route path="/production" element={<ProductionPage />} />
             <Route path="/purchases" element={<PurchasesPage />} />

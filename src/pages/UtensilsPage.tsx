@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -15,6 +17,7 @@ const UtensilsPage: React.FC = () => {
   const [status, setStatus] = useState<UtensilStatus>('ok')
   const [notes, setNotes] = useState('')
   const [filter, setFilter] = useState<'all' | UtensilStatus>('all')
+  const navigate = useNavigate()
 
   const filtered = useMemo(() => {
     return utensils.filter(u => filter === 'all' ? true : u.status === filter)
@@ -38,6 +41,12 @@ const UtensilsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-5xl mx-auto space-y-6">
+        <div>
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Utensílios</CardTitle>

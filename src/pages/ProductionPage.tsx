@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { useInventory } from '@/hooks/useInventory'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,10 +15,17 @@ const ProductionPage: React.FC = () => {
   const [portions, setPortions] = useState<number>(0)
   const recipe = useMemo(() => recipes.find(r => r.id === recipeId) || null, [recipes, recipeId])
   const factor = useMemo(() => (recipe && recipe.yield > 0 ? portions / recipe.yield : 0), [recipe, portions])
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
         <Card>
           <CardHeader><CardTitle>Registrar Produção</CardTitle></CardHeader>
           <CardContent className="space-y-4">

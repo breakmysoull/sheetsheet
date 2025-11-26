@@ -18,6 +18,10 @@ export const useInventory = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [utensils, setUtensils] = useState<Utensil[]>([]);
   
+  const [selectedDailyPlaza, setSelectedDailyPlaza] = useState<string | null>(null);
+  const [dailyInventories, setDailyInventories] = useState<Array<{ date: string; plaza: string; items: Array<{ name: string; quantity: number }> }>>([]);
+  const [selectedResponsible, setSelectedResponsible] = useState<string | null>(null);
+  
   const mergeSheets = (a: Sheet[], b: Sheet[]): Sheet[] => {
     const byName: Record<string, InventoryItem[]> = {};
     [...a, ...b].forEach(sheet => {
@@ -38,12 +42,14 @@ export const useInventory = () => {
     const savedPurchases = localStorage.getItem('purchases');
     const savedChecklists = localStorage.getItem('daily_checklists');
     const savedUtensils = localStorage.getItem('utensils');
+    const savedDailyInventories = localStorage.getItem('daily_inventories');
     if (savedSheets) setSheets(JSON.parse(savedSheets));
     if (savedLogs) setUpdateLogs(JSON.parse(savedLogs));
     if (savedRecipes) setRecipes(JSON.parse(savedRecipes));
     if (savedPurchases) setPurchases(JSON.parse(savedPurchases));
     if (savedChecklists) setDailyChecklists(JSON.parse(savedChecklists));
     if (savedUtensils) setUtensils(JSON.parse(savedUtensils));
+    if (savedDailyInventories) setDailyInventories(JSON.parse(savedDailyInventories));
   }, []);
 
   useEffect(() => {
@@ -118,6 +124,10 @@ export const useInventory = () => {
   useEffect(() => {
     localStorage.setItem('utensils', JSON.stringify(utensils));
   }, [utensils]);
+
+  useEffect(() => {
+    localStorage.setItem('daily_inventories', JSON.stringify(dailyInventories));
+  }, [dailyInventories]);
   
   const syncRef = useRef<number | null>(null);
   const scheduleSync = useCallback(() => {
@@ -236,6 +246,21 @@ export const useInventory = () => {
     })
   }, [defaultChecklistCategories])
 
+  const getDailyInventory = useCallback((plaza: string, date: string): { date: string; plaza: string; items: Array<{ name: string; quantity: number }> } | null => {
+    const found = dailyInventories.find(di => di.plaza === plaza && di.date === date)
+    return found || null
+  }, [dailyInventories])
+
+  const upsertDailyInventory = useCallback((plaza: string, date: string, items: Array<{ name: string; quantity: number }>) => {
+    setDailyInventories(prev => {
+      const next = [...prev]
+      const idx = next.findIndex(di => di.plaza === plaza && di.date === date)
+      const row = { plaza, date, items }
+      if (idx !== -1) next[idx] = row; else next.unshift(row)
+      return next
+    })
+  }, [])
+
   const addUtensil = useCallback((u: Omit<Utensil, 'id'>) => {
     const id = Date.now().toString()
     const created = { ...u, id }
@@ -282,21 +307,21 @@ export const useInventory = () => {
         }
         
         item.lastUpdated = new Date();
-        item.updatedBy = user?.email || 'Usuário';
+        item.updatedBy = selectedResponsible || user?.email || 'Usuário';
         
         // Add to update log
         const log: UpdateLog = {
           item: item.name,
           quantidadeAlterada: operation === 'add' ? quantity : item.quantity - oldQuantity,
           novaQuantidade: item.quantity,
-          usuario: user?.email || 'Usuário',
+          usuario: selectedResponsible || user?.email || 'Usuário',
           dataHora: new Date().toISOString(),
           // Manter compatibilidade
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           itemName: item.name,
           change: operation === 'add' ? quantity : item.quantity - oldQuantity,
           timestamp: new Date(),
-          updatedBy: user?.email || 'Usuário',
+          updatedBy: selectedResponsible || user?.email || 'Usuário',
           type: operation
         };
         
@@ -314,7 +339,7 @@ export const useInventory = () => {
           unit: 'un',
           category: activeSheet.name,
           lastUpdated: new Date(),
-          updatedBy: user?.email || 'Usuário'
+          updatedBy: selectedResponsible || user?.email || 'Usuário'
         };
         
         activeSheet.items.push(newItem);
@@ -323,14 +348,14 @@ export const useInventory = () => {
           item: itemName,
           quantidadeAlterada: quantity,
           novaQuantidade: quantity,
-          usuario: user?.email || 'Usuário',
+          usuario: selectedResponsible || user?.email || 'Usuário',
           dataHora: new Date().toISOString(),
           // Manter compatibilidade
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           itemName: itemName,
           change: quantity,
           timestamp: new Date(),
-          updatedBy: user?.email || 'Usuário',
+          updatedBy: selectedResponsible || user?.email || 'Usuário',
           type: 'add'
         };
         
@@ -434,18 +459,18 @@ export const useInventory = () => {
       const item = sheet.items[idx];
       item.quantity = undoEntry.previousQuantity;
       item.lastUpdated = new Date();
-      item.updatedBy = user?.email || 'Usuário';
+      item.updatedBy = selectedResponsible || user?.email || 'Usuário';
       const log: UpdateLog = {
         item: item.name,
         quantidadeAlterada: undoEntry.previousQuantity - (item.quantity),
         novaQuantidade: item.quantity,
-        usuario: user?.email || 'Usuário',
+        usuario: selectedResponsible || user?.email || 'Usuário',
         dataHora: new Date().toISOString(),
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         itemName: item.name,
         change: undoEntry.previousQuantity - (item.quantity),
         timestamp: new Date(),
-        updatedBy: user?.email || 'Usuário',
+        updatedBy: selectedResponsible || user?.email || 'Usuário',
         type: 'set',
         reason: 'Undo'
       };
@@ -470,18 +495,18 @@ export const useInventory = () => {
             const oldQuantity = item.quantity;
             item.quantity = counted;
             item.lastUpdated = new Date();
-            item.updatedBy = user?.email || 'Usuário';
+            item.updatedBy = selectedResponsible || user?.email || 'Usuário';
             const log: UpdateLog = {
               item: item.name,
               quantidadeAlterada: counted - oldQuantity,
               novaQuantidade: item.quantity,
-              usuario: user?.email || 'Usuário',
+              usuario: selectedResponsible || user?.email || 'Usuário',
               dataHora: new Date().toISOString(),
               id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
               itemName: item.name,
               change: counted - oldQuantity,
               timestamp: new Date(),
-              updatedBy: user?.email || 'Usuário',
+              updatedBy: selectedResponsible || user?.email || 'Usuário',
               type: 'set',
               reason: 'Inventário'
             };
@@ -496,20 +521,20 @@ export const useInventory = () => {
               unit: 'un',
               category: sheet.name,
               lastUpdated: new Date(),
-            updatedBy: user?.email || 'Usuário'
+            updatedBy: selectedResponsible || user?.email || 'Usuário'
             };
             sheet.items.push(newItem);
             const log: UpdateLog = {
               item: name,
               quantidadeAlterada: counted,
               novaQuantidade: counted,
-              usuario: user?.email || 'Usuário',
+              usuario: selectedResponsible || user?.email || 'Usuário',
               dataHora: new Date().toISOString(),
               id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
               itemName: name,
               change: counted,
               timestamp: new Date(),
-              updatedBy: user?.email || 'Usuário',
+              updatedBy: selectedResponsible || user?.email || 'Usuário',
               type: 'set',
               reason: 'Inventário'
             };
@@ -539,20 +564,20 @@ export const useInventory = () => {
         const oldQuantity = item.quantity;
         if (op === 'add') item.quantity += qty; else item.quantity = qty;
         item.lastUpdated = new Date();
-        item.updatedBy = user?.email || 'Usuário';
+        item.updatedBy = selectedResponsible || user?.email || 'Usuário';
         if (typeof minimum === 'number') item.minimum = minimum;
         if (typeof unitCost === 'number') item.unitCost = unitCost;
         const log: UpdateLog = {
           item: item.name,
           quantidadeAlterada: op === 'add' ? qty : item.quantity - oldQuantity,
           novaQuantidade: item.quantity,
-          usuario: user?.email || 'Usuário',
+          usuario: selectedResponsible || user?.email || 'Usuário',
           dataHora: new Date().toISOString(),
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           itemName: item.name,
           change: op === 'add' ? qty : item.quantity - oldQuantity,
           timestamp: new Date(),
-          updatedBy: user?.email || 'Usuário',
+          updatedBy: selectedResponsible || user?.email || 'Usuário',
           type: op === 'add' ? (qty >= 0 ? 'add' : 'subtract') : 'set',
           reason
         };
@@ -580,13 +605,13 @@ export const useInventory = () => {
           item: itemName,
           quantidadeAlterada: qty,
           novaQuantidade: newItem.quantity,
-          usuario: user?.email || 'Usuário',
+          usuario: selectedResponsible || user?.email || 'Usuário',
           dataHora: new Date().toISOString(),
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           itemName: itemName,
           change: qty,
           timestamp: new Date(),
-          updatedBy: user?.email || 'Usuário',
+          updatedBy: selectedResponsible || user?.email || 'Usuário',
           type: op === 'add' ? (qty >= 0 ? 'add' : 'subtract') : 'set',
           reason
         };
@@ -701,14 +726,42 @@ export const useInventory = () => {
     ) || [];
   }, [sheets, activeSheetIndex, searchQuery]);
   
+  const dailyItems = useMemo(() => {
+    if (!selectedDailyPlaza) return [] as InventoryItem[]
+    const names = new Set<string>()
+    recipes.filter(r => (r.category || '').toLowerCase() === selectedDailyPlaza.toLowerCase())
+      .forEach(r => r.ingredients.forEach(ing => names.add(ing.itemName)))
+    if (names.size === 0) {
+      const d = new Date(); d.setDate(d.getDate() - 1)
+      const prev = dailyInventories.find(di => di.plaza === selectedDailyPlaza && di.date === d.toISOString().slice(0,10))
+      const prevItems = prev?.items || []
+      prevItems.forEach(i => names.add(i.name))
+    }
+    const allItems = sheets.flatMap(s => s.items)
+    const byName = new Map<string, InventoryItem>()
+    allItems.forEach(i => { const k = i.name.toLowerCase(); if (!byName.has(k)) byName.set(k, i) })
+    return Array.from(names).map(n => {
+      const found = byName.get(n.toLowerCase())
+      return found ? found : { id: n, name: n, quantity: 0, unit: 'un', category: selectedDailyPlaza || undefined }
+    })
+  }, [selectedDailyPlaza, recipes, sheets, dailyInventories])
+  
   return {
     sheets,
     activeSheetIndex,
     setActiveSheetIndex,
+    selectedResponsible,
+    setSelectedResponsible,
+    selectedDailyPlaza,
+    setSelectedDailyPlaza,
+    dailyInventories,
+    getDailyInventory,
+    upsertDailyInventory,
     updateLogs,
     searchQuery,
     setSearchQuery,
     filteredItems,
+    dailyItems,
     loadSheets,
     updateItem,
     updateItemInAllSheets,

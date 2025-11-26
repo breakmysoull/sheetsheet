@@ -1,4 +1,6 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { useInventory } from '@/hooks/useInventory'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,6 +26,7 @@ type FormData = z.infer<typeof schema>
 
 const RecipesPage: React.FC = () => {
   const { recipes, addRecipe, filteredItems } = useInventory()
+  const navigate = useNavigate()
   const { register, control, handleSubmit, reset } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -42,6 +45,12 @@ const RecipesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="max-w-7xl mx-auto mb-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+      </div>
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader><CardTitle>Cadastrar Receita</CardTitle></CardHeader>

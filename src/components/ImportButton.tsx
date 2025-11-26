@@ -31,12 +31,16 @@ interface ImportButtonProps {
   onImport: (sheets: Sheet[]) => void;
   isLoading?: boolean;
   variant?: 'default' | 'outline' | 'secondary';
+  className?: string;
+  disabled?: boolean;
 }
 
 export const ImportButton: React.FC<ImportButtonProps> = ({
   onImport,
   isLoading = false,
-  variant = 'default'
+  variant = 'default',
+  className,
+  disabled = false
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -79,8 +83,8 @@ export const ImportButton: React.FC<ImportButtonProps> = ({
       <DialogTrigger asChild>
         <Button 
           variant={variant} 
-          disabled={isLoading}
-          className="gap-2"
+          disabled={isLoading || disabled}
+          className={`gap-2 ${className ?? ''}`}
         >
           <Upload className="h-4 w-4" />
           {isLoading ? 'Importando...' : 'Importar'}
@@ -127,7 +131,7 @@ export const ImportButton: React.FC<ImportButtonProps> = ({
                   onClick={() => fileInputRef.current?.click()}
                   variant="outline"
                   className="w-full"
-                  disabled={isLoading}
+                  disabled={isLoading || disabled}
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   Selecionar Arquivo
@@ -158,6 +162,7 @@ export const ImportButton: React.FC<ImportButtonProps> = ({
                         setWarnings(w2)
                         toast({ title: 'Correção aplicada', description: 'Duplicados agregados' })
                       }}
+                      disabled={disabled || isLoading}
                     >Corrigir duplicados</Button>
                     <Button
                       onClick={() => {
@@ -167,6 +172,7 @@ export const ImportButton: React.FC<ImportButtonProps> = ({
                         setWarnings([])
                         setIsDialogOpen(false)
                       }}
+                      disabled={disabled || isLoading}
                     >Confirmar importação</Button>
                   </div>
                 </CardContent>

@@ -1,4 +1,7 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
 import { useInventory } from '@/hooks/useInventory'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -7,6 +10,7 @@ import { Input } from '@/components/ui/input'
 const AuditPage: React.FC = () => {
   const { updateLogs } = useInventory()
   const [q, setQ] = React.useState('')
+  const navigate = useNavigate()
   const logs = React.useMemo(() => {
     return updateLogs.filter(l => {
       const s = `${l.itemName || l.item} ${l.usuario} ${l.type} ${l.reason || ''}`.toLowerCase()
@@ -16,6 +20,12 @@ const AuditPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-4">
+        <div>
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
         <Card>
           <CardHeader className="pb-3">
             <CardTitle>Auditoria de Movimentações</CardTitle>
@@ -56,4 +66,3 @@ const AuditPage: React.FC = () => {
 }
 
 export default AuditPage
-

@@ -4,30 +4,74 @@ import { useInventory } from '@/hooks/useInventory'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 const InventoryCheckPage: React.FC = () => {
   const navigate = useNavigate()
-  const { sheets, activeSheetIndex, adjustByInventory } = useInventory() as any
+  const location = useLocation() as any
+  const { sheets, activeSheetIndex, adjustByInventory, dailyItems, selectedDailyPlaza, setSelectedDailyPlaza, selectedResponsible, setSelectedResponsible, getDailyInventory, upsertDailyInventory, recipes } = useInventory() as any
   const activeSheet = sheets[activeSheetIndex]
+  const itemsToDisplay = dailyItems
+  const [extraItems, setExtraItems] = React.useState<Array<{ id: string; name: string; quantity: number }>>([])
+  const [newIngredient, setNewIngredient] = React.useState('')
+  const ingredientOptions = React.useMemo(() => {
+    const names = new Set<string>()
+    const recipesArr = recipes || []
+    const plazaLc = String(selectedDailyPlaza || '').toLowerCase()
+    recipesArr.filter((r: any) => (r.category || '').toLowerCase() === plazaLc)
+      .forEach((r: any) => r.ingredients.forEach((ing: any) => names.add(ing.itemName)))
+    return Array.from(names)
+  }, [recipes, selectedDailyPlaza])
   const [counts, setCounts] = React.useState<Record<string, number>>(() => {
     const init: Record<string, number> = {}
-    ;(activeSheet?.items || []).forEach(i => { init[i.id] = i.quantity })
+    const list = (itemsToDisplay || [])
+    list.forEach((i: any) => { init[i.id] = i.quantity })
     return init
   })
 
-  const setAll = (value: number) => {
-    const next: Record<string, number> = {}
-    ;(activeSheet?.items || []).forEach(i => { next[i.id] = value })
-    setCounts(next)
+  const addItem = () => {
+    const name = newIngredient.trim()
+    if (!name) return
+    const id = name.toLowerCase()
+    const exists = extraItems.some(i => i.id === id) || (itemsToDisplay || []).some((i: any) => (i.id === id || i.name.toLowerCase() === id))
+    if (exists) { setNewIngredient(''); return }
+    const created = { id, name, quantity: 0 }
+    setExtraItems(prev => [...prev, created])
+    setCounts(prev => ({ ...prev, [id]: 0 }))
+    setNewIngredient('')
   }
 
+  React.useEffect(() => {
+    const s = location?.state || {}
+    if (s?.plaza) setSelectedDailyPlaza(s.plaza)
+    if (s?.responsible) setSelectedResponsible(s.responsible)
+  }, [location?.state, setSelectedDailyPlaza, setSelectedResponsible])
+
+  const yesterday = React.useMemo(() => {
+    const d = new Date(); d.setDate(d.getDate() - 1)
+    return d.toISOString().slice(0,10)
+  }, [])
+  const prev = React.useMemo(() => selectedDailyPlaza ? getDailyInventory(selectedDailyPlaza, yesterday) : null, [selectedDailyPlaza, yesterday, getDailyInventory])
+  const prevMap = React.useMemo(() => {
+    const map: Record<string, number> = {}
+    const arr = prev?.items || []
+    arr.forEach(i => { map[i.name.toLowerCase()] = i.quantity })
+    return map
+  }, [prev])
+
   const finalize = () => {
-    const payload = (activeSheet?.items || []).map(i => ({ id: i.id, name: i.name, counted: counts[i.id] ?? i.quantity }))
-    adjustByInventory(payload, 'active')
-    navigate('/')
+    const list = [...(itemsToDisplay || []), ...extraItems]
+    const payload = list.map((i: any) => ({ id: i.id, name: i.name, counted: counts[i.id] ?? i.quantity }))
+    if (selectedDailyPlaza) {
+      const today = new Date().toISOString().slice(0,10)
+      upsertDailyInventory(selectedDailyPlaza, today, payload.map(p => ({ name: p.name, quantity: p.counted })))
+    }
+    adjustByInventory(payload, 'all')
+    navigate('/inventory')
   }
 
   return (
@@ -35,12 +79,14 @@ const InventoryCheckPage: React.FC = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Inventário (Contagem Real)</h1>
-            <p className="text-muted-foreground">Ajuste o estoque com base na contagem física</p>
+            <h1 className="text-2xl md:text-3xl font-bold">Inventário diário — {selectedDailyPlaza || 'Praça'}{selectedResponsible ? ` (${selectedResponsible})` : ''}</h1>
+            <p className="text-muted-foreground">Ajuste o estoque com base na contagem da praça selecionada</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/')}>Voltar</Button>
-            <Button onClick={() => setAll(0)} variant="secondary">Zerar todos</Button>
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
             <Button onClick={finalize}>Finalizar inventário</Button>
           </div>
         </motion.div>
@@ -48,11 +94,25 @@ const InventoryCheckPage: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              Aba: <Badge variant="secondary">{activeSheet?.name || 'Sem abas'}</Badge>
+              Praça: <Badge variant="secondary">{selectedDailyPlaza || 'Selecione uma praça'}</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <Table>
+            <CardContent>
+              {((itemsToDisplay || []).length === 0 && extraItems.length === 0) && (
+                <div className="mb-4 text-sm text-muted-foreground">Nenhum item cadastrado para esta praça. Adicione abaixo.</div>
+              )}
+              <div className="flex items-center gap-2 mb-4">
+                <Select value={newIngredient} onValueChange={setNewIngredient}>
+                  <SelectTrigger className="max-w-sm"><SelectValue placeholder="Adicionar item do cardápio" /></SelectTrigger>
+                  <SelectContent>
+                    {ingredientOptions.map(n => (
+                      <SelectItem key={n} value={n}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="secondary" onClick={addItem}>Adicionar</Button>
+              </div>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Produto</TableHead>
@@ -61,10 +121,10 @@ const InventoryCheckPage: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(activeSheet?.items || []).map(item => (
+                {[...(itemsToDisplay || []), ...extraItems].map((item: any) => (
                   <TableRow key={item.id}>
                     <TableCell>{item.name}</TableCell>
-                    <TableCell className="text-center">{item.quantity}</TableCell>
+                    <TableCell className="text-center">{prevMap[item.name.toLowerCase()] ?? 0}</TableCell>
                     <TableCell className="text-center">
                       <Input
                         type="number"
@@ -86,4 +146,3 @@ const InventoryCheckPage: React.FC = () => {
 }
 
 export default InventoryCheckPage
-

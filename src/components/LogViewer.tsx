@@ -1,13 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { RotateCcw } from 'lucide-react';
 import { UpdateLogs } from '@/components/UpdateLogs';
 import { useInventory } from '@/hooks/useInventory';
 import { ScrollText, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export const LogViewer: React.FC = React.memo(() => {
-  const { updateLogs, sheets } = useInventory();
+  const { updateLogs, sheets, undoLastChange } = useInventory();
 
   const stats = React.useMemo(() => {
     const total = updateLogs.length;
@@ -84,16 +86,27 @@ export const LogViewer: React.FC = React.memo(() => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ScrollText className="h-5 w-5" />
-              Histórico de Alterações
-              <Badge variant="secondary" className="ml-auto">
-                {updateLogs.length} registros
-              </Badge>
-            </CardTitle>
-          </CardHeader>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ScrollText className="h-5 w-5" />
+                Histórico de Alterações
+                <Badge variant="secondary" className="ml-auto">
+                  {updateLogs.length} registros
+                </Badge>
+                {updateLogs.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => undoLastChange()}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Desfazer última
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
           <CardContent>
             {updateLogs.length > 0 ? (
               <div className="space-y-4">

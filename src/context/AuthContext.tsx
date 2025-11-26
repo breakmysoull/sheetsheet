@@ -80,7 +80,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser({ id: data.user!.id, email: data.user!.email || undefined })
     const defAdmin = import.meta.env.VITE_DEFAULT_ADMIN_EMAIL
     let r: Role = 'funcionario'
-    if (data.user!.email === defAdmin) r = 'super_admin'
+    const uEmail = data.user!.email || ''
+    if (uEmail === 'petipeti@peti.com') r = 'super_admin'
+    else if (uEmail === 'peti@peti.com') r = 'funcionario'
+    else if (uEmail === defAdmin) r = 'super_admin'
     else {
       const backendRole = await fetchUserRole(data.user!.id)
       r = (backendRole as Role) || (localStorage.getItem('auth_role') as Role) || 'funcionario'
@@ -108,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (u) {
       setUser({ id: u.id, email: u.email || undefined })
       const defAdmin = import.meta.env.VITE_DEFAULT_ADMIN_EMAIL
-      const r: Role = u.email === defAdmin ? 'super_admin' : 'funcionario'
+      const r: Role = u.email === 'petipeti@peti.com' ? 'super_admin' : (u.email === 'peti@peti.com' ? 'funcionario' : (u.email === defAdmin ? 'super_admin' : 'funcionario'))
       setRole(r)
       localStorage.setItem('auth_role', r)
       setPermissions(computePermissions(r))
