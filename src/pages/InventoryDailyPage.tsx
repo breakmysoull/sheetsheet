@@ -49,15 +49,17 @@ const InventoryDailyPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div>
+          <Button variant="ghost" size="sm" onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/home'); }}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <ClipboardList className="h-6 w-6" />
             <h1 className="text-2xl md:text-3xl font-bold">Inventário diário por praças</h1>
           </div>
-          <Button variant="outline" className="whitespace-nowrap" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
         </div>
 
         <Card>

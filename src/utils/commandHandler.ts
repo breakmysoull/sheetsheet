@@ -50,7 +50,7 @@ export function isCommand(input: string): boolean {
  */
 export function getHelpMessage(): string {
   return `
-🚀 **SHEET CHEF SYNC - Sistema de Inventário**
+🚀 **Cozzi - Sistema de Inventário**
 
 📋 **COMANDOS DISPONÍVEIS:**
 

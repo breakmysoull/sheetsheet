@@ -11,6 +11,7 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  setRoleLocal: (role: Role) => void
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
@@ -34,13 +35,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else if (r === 'gerente') {
       ['inventory.view','inventory.edit','inventory.add','inventory.import',
        'recipes.view','recipes.create',
-       'production.register',
        'purchases.register',
        'reports.viewDaily','reports.viewMonthly',
        'logs.viewKitchen','checklist.use','utensils.edit','tabs.accessHidden'].forEach(allow)
     } else if (r === 'funcionario') {
       ['inventory.view','inventory.edit',
-       'production.register',
        'checklist.use',
        'recipes.view'].forEach(allow)
     } else if (r === 'auxiliar') {
@@ -164,8 +163,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const can = (perm: string) => !!permissions[perm]
 
+  const setRoleLocal = (r: Role) => {
+    setRole(r)
+    try { localStorage.setItem('auth_role', r) } catch {}
+    setPermissions(computePermissions(r))
+  }
+
   return (
-    <AuthContext.Provider value={{ user, role, permissions, can, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, role, permissions, can, signIn, signUp, signOut, setRoleLocal }}>
       {children}
     </AuthContext.Provider>
   )

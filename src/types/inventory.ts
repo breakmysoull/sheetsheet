@@ -45,6 +45,9 @@ export interface RecipeIngredient {
   itemName: string;
   quantity: number;
   unit: string;
+  brand?: string;
+  isSubRecipe?: boolean;
+  recipeId?: string;
 }
 
 export interface Recipe {
@@ -52,7 +55,14 @@ export interface Recipe {
   name: string;
   yield: number;
   category?: string;
+  active?: boolean;
   ingredients: RecipeIngredient[];
+  cost?: number;
+  price?: number;
+  prepSector?: string;
+  revision?: number;
+  lastChangedAt?: string;
+  versions?: Array<{ version: number; date: string; snapshot: unknown }>;
 }
 
 export interface Purchase {
@@ -70,6 +80,8 @@ export interface ChecklistItem {
   id: string;
   label: string;
   checked: boolean;
+  completedBy?: string;
+  completedAt?: string; // ISO string
 }
 
 export interface ChecklistCategory {
@@ -90,4 +102,29 @@ export interface Utensil {
   category: string;
   status: UtensilStatus;
   notes?: string;
+}
+
+export type RequestStatus = 'pending' | 'approved' | 'adjusted' | 'fulfilled' | 'canceled';
+
+export interface Request {
+  id: string; // UUID
+  kitchen_code: string;
+  date_for: string; // YYYY-MM-DD
+  status: RequestStatus;
+  notes?: string;
+  created_by?: string;
+  created_at: string; // ISO string
+  updated_at: string; // ISO string
+}
+
+export interface RequestItem {
+  id: string; // UUID
+  request_id: string; // UUID
+  kitchen_code: string;
+  product_id: string;
+  product_name?: string;
+  quantity: number;
+  unit: string;
+  note?: string;
+  created_at: string; // ISO string
 }

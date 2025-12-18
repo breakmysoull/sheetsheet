@@ -1,4 +1,7 @@
-import * as XLSX from 'xlsx';
+const getXLSX = async () => {
+  const mod = await import('xlsx');
+  return (mod as any).default || mod;
+};
 import { Sheet, InventoryItem, UpdateLog } from '@/types/inventory';
 
 export class XLSXHandler {
@@ -6,15 +9,21 @@ export class XLSXHandler {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
+          const XLSX = await getXLSX();
           const data = e.target?.result;
           const workbook = XLSX.read(data, { type: 'binary' });
           
           const sheets: Sheet[] = workbook.SheetNames.map(sheetName => {
+            console.log(`[Import] 📑 Processando aba: ${sheetName}`)
+            
             const worksheet = workbook.Sheets[sheetName];
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
             
+            // Log de auditoria da importação
+            console.log(`[Import Audit] Aba "${sheetName}": ${jsonData.length} linhas cruas encontradas`)
+
             // Debug logs (remover em produção)
             if (process.env.NODE_ENV === 'development') {
               console.log(`🔍 Debug - Planilha: ${sheetName}`);
@@ -33,129 +42,139 @@ export class XLSXHandler {
               }
             }
             
+            // Detectar cabeçalhos reais e colunas de quantidade
+            const quantityKeys: string[] = []
+            if (jsonData.length > 0) {
+              // Analisa as primeiras 5 linhas para encontrar mapeamento de chaves
+              for (let i = 0; i < Math.min(jsonData.length, 5); i++) {
+                const row: any = jsonData[i]
+                Object.keys(row).forEach(key => {
+                  const val = String(row[key]).toLowerCase()
+                  if (val.includes('armário') || val.includes('armario') || 
+                      val.includes('geladeira') || val.includes('freezer') ||
+                      val.includes('estoque') || val.includes('stock')) {
+                    if (!quantityKeys.includes(key)) quantityKeys.push(key)
+                  }
+                })
+              }
+            }
+
             const items: InventoryItem[] = jsonData.map((row: any, index) => {
-              // Estratégia específica para cada tipo de planilha
               let name = '';
               let quantity = 0;
               let unit = 'un';
-              const category = sheetName;
-              
-              // Estratégia 1: Planilha "Estoque Freezer" - formato especial
+              let category = sheetName;
+
+              const keys = Object.keys(row);
+              const lower: Record<string, any> = {};
+              keys.forEach(k => { lower[k.toLowerCase()] = row[k]; });
+
+              // Se detectamos colunas de quantidade no header scan, usamos elas
+              if (quantityKeys.length > 0) {
+                quantityKeys.forEach(key => {
+                  const val = row[key]
+                  if (typeof val === 'number') quantity += val
+                  else if (typeof val === 'string') {
+                     const match = val.match(/(\d+(?:\.\d+)?)/)
+                     if (match) quantity += parseFloat(match[1])
+                  }
+                })
+              }
+
               if (sheetName.toLowerCase().includes('freezer') || sheetName.toLowerCase().includes('estoque')) {
-                name = row['Estoque Freezer'] || '';
-                // Buscar quantidade na última coluna com data mais recente
-                const dataColumns = Object.keys(row).filter(key => 
-                  key.includes('Data:') || key.match(/\d{2}\/\d{2}\/\d{4}/)
-                );
-                if (dataColumns.length > 0) {
-                  const lastColumn = dataColumns[dataColumns.length - 1];
-                  const rawQuantity = row[lastColumn];
-                  if (typeof rawQuantity === 'number') {
-                    quantity = rawQuantity;
-                  } else if (typeof rawQuantity === 'string') {
-                    // Extrair número de strings como "2341g", "1kg"
-                    const match = rawQuantity.match(/(\d+(?:\.\d+)?)/);
-                    quantity = match ? parseFloat(match[1]) : 0;
-                    // Extrair unidade
-                    const unitMatch = rawQuantity.match(/[a-zA-Z]+/);
-                    if (unitMatch) unit = unitMatch[0];
+                name = (row['Estoque Freezer'] || lower['estoque freezer'] || '') as string;
+                if (quantity === 0) { // Só busca se não achou via quantityKeys
+                  const dataColumns = keys.filter(key => key.includes('Data:') || /\d{2}\/\d{2}\/\d{4}/.test(key));
+                  if (dataColumns.length > 0) {
+                    const lastColumn = dataColumns[dataColumns.length - 1];
+                    const rawQuantity = row[lastColumn];
+                    if (typeof rawQuantity === 'number') {
+                      quantity = rawQuantity;
+                    } else if (typeof rawQuantity === 'string') {
+                      const match = rawQuantity.match(/(\d+(?:\.\d+)?)/);
+                      quantity = match ? parseFloat(match[1]) : 0;
+                      const unitMatch = rawQuantity.match(/[a-zA-Z]+/);
+                      if (unitMatch) unit = unitMatch[0];
+                    }
                   }
                 }
-              }
-              // Estratégia 2: Planilhas com formato "__EMPTY": "PRODUTO"
-              else {
-                // Buscar nome do produto na coluna __EMPTY (primeira coluna após cabeçalhos)
-                name = row['__EMPTY'] || '';
-                
-                // Se não encontrou na __EMPTY, buscar na primeira coluna longa (título da planilha)
+              } else {
+                name = (row['__EMPTY'] || lower['__empty'] || '') as string;
                 if (!name) {
-                  const firstKey = Object.keys(row)[0];
+                  const firstKey = keys[0];
                   if (firstKey && firstKey.includes('Lista de Pedidos')) {
                     name = row[firstKey] || '';
                   }
                 }
-                
-                // Buscar quantidade em colunas que contenham "Estoque"
-                const estoqueColumns = Object.keys(row).filter(key => 
-                  key.toLowerCase().includes('estoque') || 
-                  key.toLowerCase().includes('stock') ||
-                  row[key] === 'Estoque'
-                );
-                
-                if (estoqueColumns.length > 0) {
-                  for (const col of estoqueColumns) {
-                    const rawQuantity = row[col];
-                    if (typeof rawQuantity === 'number' && rawQuantity > 0) {
-                      quantity = rawQuantity;
-                      break;
-                    } else if (typeof rawQuantity === 'string') {
-                      const match = rawQuantity.match(/(\d+(?:\.\d+)?)/);
-                      if (match) {
-                        quantity = parseFloat(match[1]);
-                        const unitMatch = rawQuantity.match(/[a-zA-Z]+/);
-                        if (unitMatch) unit = unitMatch[0];
+
+                if (quantity === 0) {
+                  const estoqueColumns = keys.filter(key => key.toLowerCase().includes('estoque') || key.toLowerCase().includes('stock') || row[key] === 'Estoque');
+                  if (estoqueColumns.length > 0) {
+                    for (const col of estoqueColumns) {
+                      const rawQuantity = row[col];
+                      if (typeof rawQuantity === 'number' && rawQuantity > 0) {
+                        quantity = rawQuantity;
                         break;
+                      } else if (typeof rawQuantity === 'string') {
+                        const match = rawQuantity.match(/(\d+(?:\.\d+)?)/);
+                        if (match) {
+                          quantity = parseFloat(match[1]);
+                          const unitMatch = rawQuantity.match(/[a-zA-Z]+/);
+                          if (unitMatch) unit = unitMatch[0];
+                          break;
+                        }
                       }
                     }
                   }
                 }
               }
-              
-                             // Fallback: tentar busca genérica se não encontrou nada
-               if (!name) {
-                 const possibleNames = [
-                   row['Produto'], row['Nome'], row['Item'], row['produto'], 
-                   row['nome'], row['item'], row['PRODUTO'], row['NOME'], row['ITEM']
-                 ];
-                 name = possibleNames.find(n => n && String(n).trim()) || '';
-               }
-               
-               if (quantity === 0) {
-                 const possibleQuantities = [
-                   row['Quantidade'], row['Qty'], row['Estoque'], row['quantidade'], 
-                   row['qty'], row['estoque'], row['QUANTIDADE'], row['QTY'], row['ESTOQUE']
-                 ];
-                 const foundQuantity = possibleQuantities.find(q => q !== undefined && q !== null && q !== '');
-                 quantity = foundQuantity ? Number(foundQuantity) || 0 : 0;
-               }
-               
+
+              if (!name) {
+                const possibleNames = [lower['produto'], lower['nome'], lower['item'], row['Produto'], row['Nome'], row['Item'], row['PRODUTO'], row['NOME'], row['ITEM']];
+                name = possibleNames.find(n => n && String(n).trim()) || '';
+              }
+
+              if (quantity === 0) {
+                const possibleQuantities = [lower['quantidade'], lower['qty'], lower['estoque'], row['Quantidade'], row['Qty'], row['Estoque'], row['QUANTIDADE'], row['QTY'], row['ESTOQUE']];
+                const foundQuantity = possibleQuantities.find(q => q !== undefined && q !== null && q !== '');
+                if (typeof foundQuantity === 'string') {
+                  const match = foundQuantity.match(/(\d+(?:\.\d+)?)/);
+                  quantity = match ? parseFloat(match[1]) : 0;
+                } else {
+                  quantity = foundQuantity ? Number(foundQuantity) || 0 : 0;
+                }
+              }
+
+              const possibleUnits = [lower['unidade'], lower['unit'], row['Unidade'], row['unit']];
+              const foundUnit = possibleUnits.find(u => u && String(u).trim());
+              if (foundUnit) unit = String(foundUnit).trim();
+
+              const possibleCategories = [lower['categoria'], row['Categoria']];
+              const foundCat = possibleCategories.find(c => c && String(c).trim());
+              if (foundCat) category = String(foundCat).trim();
+
               const item = {
                 id: `${sheetName}-${index}`,
                 name: String(name).trim(),
                 quantity: Number(quantity) || 0,
                 unit: String(unit).trim(),
                 category: String(category).trim(),
-                // Manter compatibilidade com campos antigos
                 unidade: String(unit).trim(),
                 categoria: String(category).trim(),
                 lastUpdated: new Date(),
                 updatedBy: 'Sistema'
               };
-              
-              if (process.env.NODE_ENV === 'development' && index < 3) {
-                console.log(`🔍 DEBUG Item ${index}:`);
-                console.log(`  - Linha original:`, JSON.stringify(row, null, 2));
-                console.log(`  - Nome encontrado:`, name);
-                console.log(`  - Quantidade encontrada:`, quantity);
-                console.log(`  - Unidade encontrada:`, unit);
-                console.log(`  - Item final:`, item);
-              }
               return item;
             }).filter(item => {
-              const isHeaderRow = item.name === 'PRODUTO' || 
-                                 item.name.includes('Lista de Pedidos') || 
-                                 item.name.includes('Data:') || 
-                                 item.name.includes('CONTAGEM') ||
-                                 item.name.includes('Terça') ||
-                                 item.name.includes('Quarta') ||
-                                 !item.name || 
-                                 item.name.trim().length === 0;
-              return !isHeaderRow && item.name && item.name.length > 0;
+              const n = (item.name || '').trim();
+              const isHeaderRow = n.toLowerCase() === 'produto' || n === 'PRODUTO' || n.includes('Lista de Pedidos') || n.includes('Data:') || n.includes('CONTAGEM') || n.includes('Terça') || n.includes('Quarta') || !n || n.length === 0;
+              return !isHeaderRow && n.length > 0;
             });
             
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`✅ Itens processados para ${sheetName}:`, items.length);
-              console.log(`📋 Itens finais:`, items);
+            const validItems = items.length;
+            console.log(`[Import Audit] Aba "${sheetName}": ${validItems} itens válidos extraídos.`)
+            if (validItems === 0 && jsonData.length > 0) {
+               console.warn(`[Import Warning] Aba "${sheetName}" tem dados mas 0 itens válidos. Verifique colunas/cabeçalhos.`)
             }
             
             return {
@@ -164,6 +183,9 @@ export class XLSXHandler {
             };
           });
           
+          const totalItems = sheets.reduce((acc, s) => acc + s.items.length, 0);
+          console.log(`[Import Audit] Total geral: ${totalItems} itens em ${sheets.length} abas.`)
+
           resolve(sheets);
         } catch (error) {
           reject(error);
@@ -175,7 +197,8 @@ export class XLSXHandler {
     });
   }
   
-  static exportToXLSX(sheets: Sheet[], filename: string = 'inventario_atualizado.xlsx') {
+  static async exportToXLSX(sheets: Sheet[], filename: string = 'inventario_atualizado.xlsx') {
+    const XLSX = await getXLSX();
     const workbook = XLSX.utils.book_new();
     
     sheets.forEach(sheet => {
@@ -195,7 +218,8 @@ export class XLSXHandler {
     XLSX.writeFile(workbook, filename);
   }
 
-  static exportReports(sheets: Sheet[], updateLogs: UpdateLog[], filename: string = 'relatorios_inventario.xlsx') {
+  static async exportReports(sheets: Sheet[], updateLogs: UpdateLog[], filename: string = 'relatorios_inventario.xlsx') {
+    const XLSX = await getXLSX();
     const workbook = XLSX.utils.book_new()
     const items = sheets.flatMap(s => s.items)
 

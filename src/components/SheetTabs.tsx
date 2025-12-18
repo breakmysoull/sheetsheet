@@ -116,13 +116,13 @@ export const SheetTabs = ({ sheets, activeIndex, onTabChange }: SheetTabsProps) 
             key={index}
             onClick={() => handleTabClick(index)}
             className={cn(
-              "flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200",
-              "min-w-[120px] max-w-[160px] text-left",
+              "flex-shrink-0 flex items-center gap-2 px-4 py-2 transition-all duration-200",
+              "min-w-[120px] max-w-[200px] text-left border-b",
               index === activeIndex
-                ? "bg-primary text-primary-foreground shadow-md scale-105"
-                : "bg-background hover:bg-muted text-foreground hover:scale-102"
+                ? "border-b-2 border-primary bg-transparent"
+                : "border-transparent bg-transparent hover:bg-muted"
             )}
-            whileHover={{ scale: index === activeIndex ? 1.05 : 1.02 }}
+            whileHover={{ scale: index === activeIndex ? 1.0 : 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <div className="flex-1 min-w-0">
@@ -134,12 +134,6 @@ export const SheetTabs = ({ sheets, activeIndex, onTabChange }: SheetTabsProps) 
               </div>
             </div>
             
-            <Badge 
-              variant={index === activeIndex ? "secondary" : "outline"}
-              className="h-5 px-1.5 text-xs shrink-0"
-            >
-              {sheet.items.length}
-            </Badge>
           </motion.button>
         ))}
       </div>

@@ -48,7 +48,63 @@ export const InventoryTable = ({ items, updateLogs }: InventoryTableProps) => {
 
   return (
     <ScrollArea className="h-[calc(100vh-320px)] md:h-[calc(100vh-280px)]">
-      <div className="overflow-x-auto">
+      {/* Lista compacta para mobile */}
+      <div className="md:hidden space-y-2">
+        {items.map((inventoryItem) => {
+          const recentUpdate = getRecentUpdate(inventoryItem.name);
+          const isRecent = recentUpdate && 
+            (new Date().getTime() - new Date(recentUpdate.timestamp || (recentUpdate as any).dataHora).getTime()) < 300000;
+          return (
+            <div key={inventoryItem.id} className={`border rounded-md p-3 text-sm ${isRecent ? 'bg-primary/5' : ''}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">{inventoryItem.name}</span>
+                    {typeof inventoryItem.minimum === 'number' && inventoryItem.minimum > 0 && inventoryItem.quantity < inventoryItem.minimum && (
+                      <Badge variant="destructive" className="text-xs">Crítico</Badge>
+                    )}
+                  </div>
+                  <div className="mt-1 text-muted-foreground">
+                    <span className="font-semibold text-foreground mr-1">{inventoryItem.quantity}</span>
+                    <span className="text-xs">{inventoryItem.unit || (inventoryItem as any).unidade || 'un'}</span>
+                    {typeof inventoryItem.minimum === 'number' && inventoryItem.minimum > 0 && (
+                      <span className="text-xs ml-2">min {inventoryItem.minimum}</span>
+                    )}
+                  </div>
+                  <div className="mt-1 flex items-center gap-2">
+                    {recentUpdate && (
+                      <span className={`text-xs flex items-center gap-1 ${((recentUpdate as any).change || (recentUpdate as any).quantidadeAlterada || 0) > 0 ? 'text-success' : 'text-destructive'}`}>
+                        {((recentUpdate as any).change || (recentUpdate as any).quantidadeAlterada || 0) > 0 ? (
+                          <>
+                            <TrendingUp className="h-3 w-3" />
+                            +{(recentUpdate as any).change || (recentUpdate as any).quantidadeAlterada}
+                          </>
+                        ) : (
+                          <>
+                            <TrendingDown className="h-3 w-3" />
+                            {(recentUpdate as any).change || (recentUpdate as any).quantidadeAlterada}
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="h-8"
+                  onClick={() => { setSelectedItem(inventoryItem.name); setOpen(true); }}
+                >
+                  <History className="h-4 w-4 mr-2" />
+                  Histórico
+                </Button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Tabela para telas maiores */}
+      <div className="hidden md:block overflow-x-auto">
       <Table className="min-w-[360px]">
         <TableHeader>
           <TableRow>

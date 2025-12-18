@@ -24,6 +24,7 @@ import { Separator } from '@/components/ui/separator';
 
 import { XLSXHandler } from '@/services/xlsxHandler';
 import { analyzeSheets, fixSheetsAggregateDuplicates, ImportWarning } from '@/services/importValidator';
+import { distributeItemsByCategory } from '@/services/categoryDistributor';
 import { Sheet } from '@/types/inventory';
 import { toast } from '@/hooks/use-toast';
 
@@ -53,6 +54,14 @@ export const ImportButton: React.FC<ImportButtonProps> = ({
 
     try {
       const sheets = await XLSXHandler.parseFile(file);
+      const totalItems = sheets.reduce((acc, s) => acc + (s.items?.length || 0), 0);
+      if (totalItems === 0) {
+        toast({ title: 'Nenhum item válido encontrado', description: 'Revise o arquivo: colunas Produto, Quantidade, Unidade, Categoria', variant: 'destructive' });
+        setParsedSheets(null);
+        setWarnings([]);
+        setIsDialogOpen(true);
+        return;
+      }
       setParsedSheets(sheets);
       const w = analyzeSheets(sheets);
       setWarnings(w);
@@ -85,13 +94,14 @@ export const ImportButton: React.FC<ImportButtonProps> = ({
           variant={variant} 
           disabled={isLoading || disabled}
           className={`gap-2 ${className ?? ''}`}
+          onClick={() => setIsDialogOpen(true)}
         >
           <Upload className="h-4 w-4" />
           {isLoading ? 'Importando...' : 'Importar'}
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5" />
@@ -152,7 +162,7 @@ export const ImportButton: React.FC<ImportButtonProps> = ({
                     ))}
                     {warnings.length === 0 && (<div>Sem avisos</div>)}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -165,8 +175,31 @@ export const ImportButton: React.FC<ImportButtonProps> = ({
                       disabled={disabled || isLoading}
                     >Corrigir duplicados</Button>
                     <Button
+                      variant="secondary"
                       onClick={() => {
                         if (!parsedSheets) return
+                        const { sheets: distributed, transfers } = distributeItemsByCategory(parsedSheets)
+                        setParsedSheets(distributed)
+                        const w2 = analyzeSheets(distributed)
+                        setWarnings(w2)
+                        toast({ 
+                          title: 'Redistribuição aplicada', 
+                          description: `${transfers.length} itens movidos para abas corretas.` 
+                        })
+                        if (transfers.length > 0) {
+                          console.log('[Import] Transferências:', transfers)
+                        }
+                      }}
+                      disabled={disabled || isLoading}
+                    >Auto-classificar Abas</Button>
+                    <Button
+                      onClick={() => {
+                        if (!parsedSheets) return
+                        const total = parsedSheets.reduce((acc, s) => acc + (s.items?.length || 0), 0)
+                        if (total === 0) {
+                          toast({ title: 'Nenhum item para importar', description: 'A planilha não possui linhas válidas', variant: 'destructive' })
+                          return
+                        }
                         onImport(parsedSheets)
                         setParsedSheets(null)
                         setWarnings([])

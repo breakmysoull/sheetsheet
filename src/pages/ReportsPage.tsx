@@ -39,7 +39,7 @@ const ReportsPage: React.FC = () => {
       <div className="min-h-screen bg-background p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
           <div className="mb-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="sm" onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/home'); }}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
@@ -59,7 +59,7 @@ const ReportsPage: React.FC = () => {
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="sm" onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/home'); }}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>

@@ -7,16 +7,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: true,
     port: 3002,
-    strictPort: true,
-    hmr: {
-      port: 3002,
-      clientPort: 3002,
-      overlay: false, // Disable error overlay that might cause refreshes
-    },
-    watch: {
-      usePolling: false, // Disable polling that can cause excessive refreshes
-      ignored: ['**/node_modules/**', '**/.git/**'],
-    },
+    strictPort: false,
   },
   plugins: [
     react(),

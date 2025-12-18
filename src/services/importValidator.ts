@@ -31,6 +31,7 @@ export function fixSheetsAggregateDuplicates(sheets: Sheet[]): Sheet[] {
     const map = new Map<string, number>()
     const units = new Map<string, string | undefined>()
     const cats = new Map<string, string | undefined>()
+    const display = new Map<string, string>()
     sheet.items.forEach(i => {
       const key = i.name.trim().toLowerCase()
       const prev = map.get(key) || 0
@@ -38,10 +39,11 @@ export function fixSheetsAggregateDuplicates(sheets: Sheet[]): Sheet[] {
       map.set(key, prev + qty)
       if (!units.get(key)) units.set(key, i.unit || i.unidade)
       if (!cats.get(key)) cats.set(key, i.category || i.categoria)
+      if (!display.get(key)) display.set(key, i.name)
     })
     const items = Array.from(map.entries()).map(([key, qty]) => ({
-      id: key,
-      name: key,
+      id: `${sheet.name}:${key}`,
+      name: display.get(key) || key,
       quantity: qty,
       unit: units.get(key) || 'un',
       category: cats.get(key) || sheet.name,
@@ -49,4 +51,3 @@ export function fixSheetsAggregateDuplicates(sheets: Sheet[]): Sheet[] {
     return { name: sheet.name, items }
   })
 }
-

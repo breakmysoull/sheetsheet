@@ -20,7 +20,7 @@ const NotFound = () => {
         <h1 className="text-4xl font-bold mb-4">404</h1>
         <p className="text-xl text-muted-foreground mb-4">Página não encontrada</p>
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" onClick={() => navigate(-1)}>
+          <Button variant="outline" onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/home'); }}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>

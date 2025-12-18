@@ -47,14 +47,14 @@ const PurchasesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto mb-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="sm" onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/home'); }}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
       </div>
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle>Registrar Compra</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Registrar Solicitação</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
@@ -89,13 +89,13 @@ const PurchasesPage: React.FC = () => {
                 <Label>Foto (URL)</Label>
                 <Input {...register('photoUrl')} />
               </div>
-              <Button type="submit">Salvar Compra</Button>
+              <Button type="submit">Salvar Solicitação</Button>
             </form>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Histórico de Compras</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Histórico de Solicitações</CardTitle></CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
             <Table className="min-w-[720px]">

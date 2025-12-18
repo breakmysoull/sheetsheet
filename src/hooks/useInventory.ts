@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Sheet, InventoryItem, UpdateLog, Recipe, Purchase, DailyChecklist, ChecklistCategory, Utensil, UtensilStatus } from '@/types/inventory';
 import { toast } from '@/hooks/use-toast';
-import { saveSheets, upsertItem, insertLog, fetchSheetsWithItems, subscribeItemsRealtime, fetchUtensils, upsertUtensil, subscribeUtensilsRealtime, fetchDailyChecklists, upsertDailyChecklist, subscribeChecklistsRealtime, fetchKitchenCodeForUser } from '@/services/supabaseInventory';
+import { clearInventory, saveSheets, upsertItem, insertLog, fetchSheetsWithItems, subscribeItemsRealtime, fetchUtensils, upsertUtensil, subscribeUtensilsRealtime, fetchDailyChecklists, upsertDailyChecklist, subscribeChecklistsRealtime, fetchKitchenCodeForUser, fetchWeeklyRules, upsertWeeklyRule, deleteWeeklyRule, subscribeWeeklyRulesRealtime, fetchDailyInventories, upsertDailyInventory, subscribeDailyInventoriesRealtime, fetchRecipes, upsertRecipe, deleteRecipe, subscribeRecipesRealtime, fetchPurchases, upsertPurchase, subscribePurchasesRealtime, fetchUpdateLogs, subscribeUpdateLogsRealtime, upsertKitchenUser, ensureRestaurantExists } from '@/services/supabaseInventory';
 import { sendWhatsAppAlert, buildLowStockMessage } from '@/services/alerts';
 
 export const useInventory = () => {
@@ -12,8 +12,9 @@ export const useInventory = () => {
   const [updateLogs, setUpdateLogs] = useState<UpdateLog[]>([]);
   const [undoEntry, setUndoEntry] = useState<{ itemName: string; previousQuantity: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [kitchenCode, setKitchenCode] = useState<string>(() => localStorage.getItem('kitchen_code') || '');
+  const [kitchenCode, setKitchenCode] = useState<string>(() => localStorage.getItem('kitchen_code') || (import.meta.env.VITE_DEFAULT_KITCHEN_CODE as string || ''));
   const [dailyChecklists, setDailyChecklists] = useState<DailyChecklist[]>([]);
+  const [weeklyRules, setWeeklyRules] = useState<Array<{ id: string; weekday: number; category: string; section?: 'pre' | 'mont'; label: string }>>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [utensils, setUtensils] = useState<Utensil[]>([]);
@@ -21,6 +22,7 @@ export const useInventory = () => {
   const [selectedDailyPlaza, setSelectedDailyPlaza] = useState<string | null>(null);
   const [dailyInventories, setDailyInventories] = useState<Array<{ date: string; plaza: string; items: Array<{ name: string; quantity: number }> }>>([]);
   const [selectedResponsible, setSelectedResponsible] = useState<string | null>(null);
+  const [selectedDailyRecipeIds, setSelectedDailyRecipeIds] = useState<string[]>([])
   
   const mergeSheets = (a: Sheet[], b: Sheet[]): Sheet[] => {
     const byName: Record<string, InventoryItem[]> = {};
@@ -34,22 +36,8 @@ export const useInventory = () => {
     return Object.keys(byName).map(name => ({ name, items: byName[name] }));
   };
 
-  // Load data from localStorage on mount
+  // Load data from localStorage on mount (removed recipes/purchases as they are now in Supabase)
   useEffect(() => {
-    const savedSheets = localStorage.getItem('inventory_sheets');
-    const savedLogs = localStorage.getItem('update_logs');
-    const savedRecipes = localStorage.getItem('recipes');
-    const savedPurchases = localStorage.getItem('purchases');
-    const savedChecklists = localStorage.getItem('daily_checklists');
-    const savedUtensils = localStorage.getItem('utensils');
-    const savedDailyInventories = localStorage.getItem('daily_inventories');
-    if (savedSheets) setSheets(JSON.parse(savedSheets));
-    if (savedLogs) setUpdateLogs(JSON.parse(savedLogs));
-    if (savedRecipes) setRecipes(JSON.parse(savedRecipes));
-    if (savedPurchases) setPurchases(JSON.parse(savedPurchases));
-    if (savedChecklists) setDailyChecklists(JSON.parse(savedChecklists));
-    if (savedUtensils) setUtensils(JSON.parse(savedUtensils));
-    if (savedDailyInventories) setDailyInventories(JSON.parse(savedDailyInventories));
   }, []);
 
   useEffect(() => {
@@ -70,74 +58,144 @@ export const useInventory = () => {
   useEffect(() => {
     (async () => {
       try {
+        // Sheets
         const remote = await fetchSheetsWithItems(kitchenCode || undefined);
         if (remote && remote.length > 0) {
-          const savedSheets = localStorage.getItem('inventory_sheets');
-          const local = savedSheets ? JSON.parse(savedSheets) as Sheet[] : [];
-          const merged = mergeSheets(remote, local);
-          setSheets(merged);
+          setSheets(remote);
           setActiveSheetIndex(0);
-          saveSheets(merged, kitchenCode || undefined).catch(() => {});
         }
+        // Utensils
         const remoteUtensils = await fetchUtensils(kitchenCode || undefined)
         if (remoteUtensils && remoteUtensils.length > 0) {
-          const localUt = localStorage.getItem('utensils')
-          const localList: Utensil[] = localUt ? JSON.parse(localUt) : []
-          const byName = new Map<string, Utensil>()
-          ;[...remoteUtensils, ...localList].forEach(u => { byName.set(u.name.toLowerCase(), u) })
-          setUtensils(Array.from(byName.values()))
+          setUtensils(remoteUtensils)
         }
+        // Daily Checklists
         const remoteChecklists = await fetchDailyChecklists(kitchenCode || undefined)
         if (remoteChecklists && remoteChecklists.length > 0) {
-          const localCl = localStorage.getItem('daily_checklists')
-          const localList: DailyChecklist[] = localCl ? JSON.parse(localCl) : []
-          const byDate = new Map<string, DailyChecklist>()
-          ;[...localList, ...remoteChecklists].forEach(c => { byDate.set(c.date, c) })
-          setDailyChecklists(Array.from(byDate.values()))
+          setDailyChecklists(remoteChecklists)
+        }
+        // Weekly Rules
+        const remoteRules = await fetchWeeklyRules(kitchenCode || undefined)
+        if (remoteRules && remoteRules.length > 0) {
+          setWeeklyRules(remoteRules)
+        }
+        // Daily Inventories
+        const remoteInventories = await fetchDailyInventories(kitchenCode || undefined)
+        if (remoteInventories && remoteInventories.length > 0) {
+          setDailyInventories(remoteInventories)
+        }
+        // Recipes
+        const remoteRecipes = await fetchRecipes(kitchenCode || undefined)
+        if (remoteRecipes && remoteRecipes.length > 0) {
+          setRecipes(remoteRecipes)
+        }
+        // Purchases
+        const remotePurchases = await fetchPurchases(kitchenCode || undefined)
+        if (remotePurchases && remotePurchases.length > 0) {
+          setPurchases(remotePurchases)
+        }
+        // Logs
+        const remoteLogs = await fetchUpdateLogs(kitchenCode || undefined)
+        if (remoteLogs && remoteLogs.length > 0) {
+          setUpdateLogs(remoteLogs)
         }
       } catch {}
     })();
   }, [kitchenCode]);
   
-  // Save to localStorage whenever data changes
+  const isSavingRef = useRef(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Realtime Subscriptions
   useEffect(() => {
-    if (sheets.length > 0) {
-      localStorage.setItem('inventory_sheets', JSON.stringify(sheets));
+    if (!kitchenCode) return
+    const subItems = subscribeItemsRealtime(kitchenCode, () => {
+      if (isSavingRef.current) {
+        console.log('🔒 Realtime update ignorado durante salvamento em massa')
+        return
+      }
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      debounceRef.current = setTimeout(() => {
+        fetchSheetsWithItems(kitchenCode).then(data => { 
+          if(data.length) {
+             console.log('🔄 Realtime update aplicado')
+             setSheets(data) 
+          }
+        })
+      }, 1000)
+    })
+    const subUtensils = subscribeUtensilsRealtime(kitchenCode, () => {
+      fetchUtensils(kitchenCode).then(data => { if(data.length) setUtensils(data) })
+    })
+    const subChecklists = subscribeChecklistsRealtime(kitchenCode, () => {
+      fetchDailyChecklists(kitchenCode).then(data => { if(data.length) setDailyChecklists(data) })
+    })
+    const subRules = subscribeWeeklyRulesRealtime(kitchenCode, () => {
+      fetchWeeklyRules(kitchenCode).then(data => { if(data.length) setWeeklyRules(data) })
+    })
+    const subInventories = subscribeDailyInventoriesRealtime(kitchenCode, () => {
+      fetchDailyInventories(kitchenCode).then(data => { if(data.length) setDailyInventories(data) })
+    })
+    const subRecipes = subscribeRecipesRealtime(kitchenCode, () => {
+      fetchRecipes(kitchenCode).then(data => { if(data.length) setRecipes(data) })
+    })
+    const subPurchases = subscribePurchasesRealtime(kitchenCode, () => {
+      fetchPurchases(kitchenCode).then(data => { if(data) setPurchases(data) })
+    })
+    const subLogs = subscribeUpdateLogsRealtime(kitchenCode, (payload) => {
+      try {
+        const row: any = payload.new
+        if (!row) return
+        const newLog: UpdateLog = {
+          id: String(row.log_id),
+          item: String(row.item_name),
+          itemName: String(row.item_name),
+          quantidadeAlterada: Number(row.change),
+          change: Number(row.change),
+          novaQuantidade: Number(row.new_quantity),
+          usuario: String(row.updated_by),
+          updatedBy: String(row.updated_by),
+          dataHora: row.timestamp,
+          timestamp: new Date(row.timestamp),
+          type: row.type,
+          reason: row.reason
+        }
+        setUpdateLogs(prev => [newLog, ...prev].slice(0, 50))
+      } catch {}
+    })
+    return () => {
+      subItems.unsubscribe()
+      subUtensils.unsubscribe()
+      subChecklists.unsubscribe()
+      subRules.unsubscribe()
+      subInventories.unsubscribe()
+      subRecipes.unsubscribe()
+      subPurchases.unsubscribe()
+      subLogs.unsubscribe()
     }
-  }, [sheets]);
+  }, [kitchenCode])
   
-  useEffect(() => {
-    if (updateLogs.length > 0) {
-      localStorage.setItem('update_logs', JSON.stringify(updateLogs));
-    }
-  }, [updateLogs]);
-  useEffect(() => {
-    localStorage.setItem('recipes', JSON.stringify(recipes));
-  }, [recipes]);
-  useEffect(() => {
-    localStorage.setItem('purchases', JSON.stringify(purchases));
-  }, [purchases]);
-  useEffect(() => {
-    localStorage.setItem('daily_checklists', JSON.stringify(dailyChecklists));
-  }, [dailyChecklists]);
-
-  useEffect(() => {
-    localStorage.setItem('utensils', JSON.stringify(utensils));
-  }, [utensils]);
-
-  useEffect(() => {
-    localStorage.setItem('daily_inventories', JSON.stringify(dailyInventories));
-  }, [dailyInventories]);
+  // LocalStorage sync removed for migrated types
   
   const syncRef = useRef<number | null>(null);
   const scheduleSync = useCallback(() => {
+    if (!kitchenCode) return; // evita erro RLS quando não há kitchenCode
     if (syncRef.current) clearTimeout(syncRef.current);
     syncRef.current = window.setTimeout(() => {
-      saveSheets(sheets, kitchenCode || undefined).catch(() => {});
+      (async () => {
+        try {
+          if (user?.id && kitchenCode) {
+            const ok = await ensureRestaurantExists(kitchenCode)
+            if (!ok) return
+            await upsertKitchenUser(user.id, kitchenCode)
+          }
+        } catch {}
+        saveSheets(sheets, kitchenCode).catch(() => {});
+      })();
     }, 300);
-  }, [sheets, kitchenCode]);
+  }, [sheets, kitchenCode, user?.id]);
 
-  const loadSheets = useCallback((newSheets: Sheet[]) => {
+  const loadSheets = useCallback(async (newSheets: Sheet[]) => {
     console.log('🔄 loadSheets chamado com:', newSheets);
     console.log('📊 Total de planilhas:', newSheets.length);
     
@@ -151,59 +209,131 @@ export const useInventory = () => {
     setSheets(newSheets);
     setActiveSheetIndex(0);
     console.log('✅ Sheets state atualizado');
-    saveSheets(newSheets, kitchenCode || undefined).catch(() => {})
-  }, []);
+    
+    isSavingRef.current = true;
+    try {
+      const payload = { kitchenCode: kitchenCode || null, sheets: newSheets, createdAt: Date.now() }
+      localStorage.setItem('pending_import_payload', JSON.stringify(payload))
+    } catch {}
+    try {
+      if (!kitchenCode) {
+        toast({ title: 'Importação local', description: 'Defina o código da cozinha para persistir no Supabase.', variant: 'destructive' })
+      } else {
+        try {
+          const ok = await ensureRestaurantExists(kitchenCode)
+          if (!ok) return
+          if (user?.id) await upsertKitchenUser(user.id, kitchenCode)
+        } catch {}
+        await saveSheets(newSheets, kitchenCode)
+        console.log('💾 Sheets salvos no Supabase com sucesso');
+        try { localStorage.removeItem('pending_import_payload') } catch {}
+      }
+    } catch (error) {
+      console.error('❌ Erro ao salvar sheets:', error);
+      toast({ title: 'Erro ao salvar', description: 'Falha ao persistir dados.', variant: 'destructive' });
+    } finally {
+      // Mantém flag true por mais um tempo para evitar race com realtime tardio
+      setTimeout(() => { isSavingRef.current = false }, 2000);
+    }
+  }, [kitchenCode]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = localStorage.getItem('pending_import_payload')
+        if (!raw) return
+        const parsed = JSON.parse(raw)
+        const kc = parsed?.kitchenCode || null
+        const sheetsPayload = parsed?.sheets || []
+        if (!sheetsPayload || sheetsPayload.length === 0) return
+        if (kc && String(kc) !== String(kitchenCode || '')) return
+        isSavingRef.current = true
+        setSheets(sheetsPayload)
+        setActiveSheetIndex(0)
+        try {
+          await saveSheets(sheetsPayload, kitchenCode || undefined)
+          localStorage.removeItem('pending_import_payload')
+        } catch {}
+        setTimeout(() => { isSavingRef.current = false }, 2000)
+      } catch {}
+    })()
+  }, [kitchenCode])
 
   const defaultChecklistCategories = useCallback((): ChecklistCategory[] => ([
     {
-      name: 'Pré-preparo',
+      name: 'Entradas',
       items: [
-        { id: 'mises', label: 'Separar mise en place', checked: false },
-        { id: 'descongelar', label: 'Descongelar proteínas', checked: false },
-        { id: 'marinar', label: 'Marinar carnes', checked: false },
+        { id: 'entradas-pre-mise', label: 'Pré-preparo: separar mise da praça', checked: false },
+        { id: 'entradas-pre-ingredientes', label: 'Pré-preparo: porcionar ingredientes', checked: false },
+        { id: 'entradas-mont-utensilios', label: 'Montagem: dispor utensílios', checked: false },
+        { id: 'entradas-mont-estacao', label: 'Montagem: organizar estação', checked: false },
+      ]
+    },
+    {
+      name: 'Principais',
+      items: [
+        { id: 'principais-pre-mise', label: 'Pré-preparo: separar mise da praça', checked: false },
+        { id: 'principais-pre-ingredientes', label: 'Pré-preparo: porcionar ingredientes', checked: false },
+        { id: 'principais-mont-utensilios', label: 'Montagem: dispor utensílios', checked: false },
+        { id: 'principais-mont-estacao', label: 'Montagem: organizar estação', checked: false },
+      ]
+    },
+    {
+      name: 'Sobremesas',
+      items: [
+        { id: 'sobremesas-pre-mise', label: 'Pré-preparo: separar mise da praça', checked: false },
+        { id: 'sobremesas-pre-ingredientes', label: 'Pré-preparo: porcionar ingredientes', checked: false },
+        { id: 'sobremesas-mont-utensilios', label: 'Montagem: dispor utensílios', checked: false },
+        { id: 'sobremesas-mont-estacao', label: 'Montagem: organizar estação', checked: false },
       ]
     },
     {
       name: 'Limpeza',
       items: [
-        { id: 'bancadas', label: 'Higienizar bancadas', checked: false },
-        { id: 'pias', label: 'Limpar pias', checked: false },
-        { id: 'chao', label: 'Lavar chão', checked: false },
-      ]
-    },
-    {
-      name: 'Montagem da praça',
-      items: [
-        { id: 'utensilios', label: 'Dispor utensílios', checked: false },
-        { id: 'condimentos', label: 'Abastecer condimentos', checked: false },
-        { id: 'organizacao', label: 'Organizar estação', checked: false },
-      ]
-    },
-    {
-      name: 'Temperaturas',
-      items: [
-        { id: 'geladeira', label: 'Aferir geladeiras', checked: false },
-        { id: 'freezer', label: 'Aferir freezers', checked: false },
-        { id: 'banho', label: 'Verificar banho-maria', checked: false },
-      ]
-    },
-    {
-      name: 'Utensílios',
-      items: [
-        { id: 'facas', label: 'Conferir facas', checked: false },
-        { id: 'panelas', label: 'Conferir panelas', checked: false },
-        { id: 'formas', label: 'Conferir formas/assadeiras', checked: false },
+        { id: 'limpeza-bancadas', label: 'Higienizar bancadas', checked: false },
+        { id: 'limpeza-pias', label: 'Limpar pias', checked: false },
+        { id: 'limpeza-chao', label: 'Lavar chão', checked: false },
       ]
     },
   ]), [])
+
+  const weeklyTasksForDate = useCallback((dateIso: string) => {
+    const [y,m,d] = dateIso.split('-').map(Number)
+    const base = new Date(y, (m || 1) - 1, d || 1)
+    const weekdayName = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', timeZone: 'America/Sao_Paulo' }).format(base).toLowerCase()
+    const map: Record<string, number> = {
+      'dom.': 0, 'domingo': 0,
+      'seg.': 1, 'segunda': 1,
+      'ter.': 2, 'terça': 2,
+      'qua.': 3, 'quarta': 3,
+      'qui.': 4, 'quinta': 4,
+      'sex.': 5, 'sexta': 5,
+      'sáb.': 6, 'sábado': 6
+    }
+    const weekday = map[weekdayName] ?? base.getDay()
+    const tasks = weeklyRules.filter(r => r.weekday === weekday)
+    return tasks
+  }, [weeklyRules])
 
   const getChecklistForDate = useCallback((date: string): DailyChecklist => {
     const idx = dailyChecklists.findIndex(c => c.date === date)
     if (idx !== -1) return dailyChecklists[idx]
     const created: DailyChecklist = { date, categories: defaultChecklistCategories() }
+    const weekly = weeklyTasksForDate(date)
+    weekly.forEach(r => {
+      const cat = created.categories.find(c => c.name === r.category)
+      if (!cat) return
+      const slug = r.label.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')
+      const prefix = r.category.toLowerCase() === 'limpeza' ? 'limpeza-semanal' : `${r.category.toLowerCase()}-${r.section || 'pre'}`
+      const id = `${prefix}-${r.weekday}-${slug}`
+      if (!cat.items.some(i => i.id === id)) {
+        const label = r.category.toLowerCase() === 'limpeza' ? r.label : (r.section === 'mont' ? `Montagem: ${r.label}` : `Pré-preparo: ${r.label}`)
+        cat.items.push({ id, label, checked: false })
+      }
+    })
     setDailyChecklists(prev => [created, ...prev])
     return created
-  }, [dailyChecklists, defaultChecklistCategories])
+  }, [dailyChecklists, defaultChecklistCategories, weeklyTasksForDate])
 
   const toggleChecklistItem = useCallback((date: string, categoryName: string, itemId: string, checked: boolean) => {
     setDailyChecklists(prev => {
@@ -216,10 +346,17 @@ export const useInventory = () => {
       const it = cat.items.find(i => i.id === itemId)
       if (!it) return next
       it.checked = checked
+      if (checked) {
+        it.completedBy = (user?.email as string) || 'local'
+        it.completedAt = new Date().toISOString()
+      } else {
+        it.completedBy = undefined
+        it.completedAt = undefined
+      }
       upsertDailyChecklist(target as DailyChecklist, kitchenCode || undefined).catch(() => {})
       return next
     })
-  }, [defaultChecklistCategories])
+  }, [defaultChecklistCategories, user?.email])
 
   const setChecklistCategoryAll = useCallback((date: string, categoryName: string, checked: boolean) => {
     setDailyChecklists(prev => {
@@ -237,29 +374,137 @@ export const useInventory = () => {
   const resetChecklist = useCallback((date: string) => {
     setDailyChecklists(prev => {
       const next = [...prev]
+      const base = { date, categories: defaultChecklistCategories() }
+      const weekly = weeklyTasksForDate(date)
+      weekly.forEach(r => {
+        const cat = base.categories.find(c => c.name === r.category)
+        if (!cat) return
+        const slug = r.label.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')
+        const prefix = r.category.toLowerCase() === 'limpeza' ? 'limpeza-semanal' : `${r.category.toLowerCase()}-${r.section || 'pre'}`
+        const id = `${prefix}-${r.weekday}-${slug}`
+        if (!cat.items.some(i => i.id === id)) {
+          const label = r.category.toLowerCase() === 'limpeza' ? r.label : (r.section === 'mont' ? `Montagem: ${r.label}` : `Pré-preparo: ${r.label}`)
+          cat.items.push({ id, label, checked: false })
+        }
+      })
       const idx = next.findIndex(c => c.date === date)
-      if (idx !== -1) next[idx] = { date, categories: defaultChecklistCategories() }
-      else next.unshift({ date, categories: defaultChecklistCategories() })
+      if (idx !== -1) next[idx] = base
+      else next.unshift(base)
       const target = next.find(c => c.date === date) as DailyChecklist
       if (target) upsertDailyChecklist(target, kitchenCode || undefined).catch(() => {})
       return next
     })
+  }, [defaultChecklistCategories, weeklyTasksForDate])
+
+  const addChecklistItem = useCallback((date: string, areaName: string, section: 'pre' | 'mont', label: string) => {
+    setDailyChecklists(prev => {
+      const next = [...prev]
+      const idx = next.findIndex(c => c.date === date)
+      const target = idx !== -1 ? next[idx] : { date, categories: defaultChecklistCategories() }
+      if (idx === -1) next.unshift(target as DailyChecklist)
+      const cat = target.categories.find(c => c.name === areaName)
+      if (!cat) return next
+      const id = `${areaName.toLowerCase()}-${section}-${Date.now().toString(36)}`
+      cat.items.push({ id, label, checked: false })
+      upsertDailyChecklist(target as DailyChecklist, kitchenCode || undefined).catch(() => {})
+      return next
+    })
   }, [defaultChecklistCategories])
+
+  const addChecklistItemsBulk = useCallback((date: string, areaName: string, section: 'pre' | 'mont', raw: string) => {
+    const parts = raw.split(/[,;\n]/).map(s => s.trim()).filter(s => s.length > 0)
+    if (parts.length === 0) return
+    setDailyChecklists(prev => {
+      const next = [...prev]
+      const idx = next.findIndex(c => c.date === date)
+      const target = idx !== -1 ? next[idx] : { date, categories: defaultChecklistCategories() }
+      if (idx === -1) next.unshift(target as DailyChecklist)
+      const cat = target.categories.find(c => c.name === areaName)
+      if (!cat) return next
+      parts.forEach(lbl0 => {
+        let lbl = lbl0
+        let sec = section
+        const lower = lbl0.toLowerCase()
+        if (lower.startsWith('pre:') || lower.startsWith('pré:')) { sec = 'pre'; lbl = lbl0.replace(/^pre:\s*|^pré:\s*/i,'').trim() }
+        else if (lower.startsWith('mont:') || lower.startsWith('montagem:')) { sec = 'mont'; lbl = lbl0.replace(/^mont:\s*|^montagem:\s*/i,'').trim() }
+        const base = areaName.toLowerCase()
+        const id = `${base}-${sec}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`
+        cat.items.push({ id, label: lbl, checked: false })
+      })
+      upsertDailyChecklist(target as DailyChecklist, kitchenCode || undefined).catch(() => {})
+      return next
+    })
+  }, [defaultChecklistCategories])
+
+  const updateChecklistItem = useCallback((date: string, areaName: string, itemId: string, newLabel: string) => {
+    setDailyChecklists(prev => {
+      const next = [...prev]
+      const idx = next.findIndex(c => c.date === date)
+      const target = idx !== -1 ? next[idx] : { date, categories: defaultChecklistCategories() }
+      if (idx === -1) next.unshift(target as DailyChecklist)
+      const cat = target.categories.find(c => c.name === areaName)
+      if (!cat) return next
+      const it = cat.items.find(i => i.id === itemId)
+      if (!it) return next
+      it.label = newLabel
+      upsertDailyChecklist(target as DailyChecklist, kitchenCode || undefined).catch(() => {})
+      return next
+    })
+  }, [defaultChecklistCategories])
+
+  const deleteChecklistItem = useCallback((date: string, areaName: string, itemId: string) => {
+    setDailyChecklists(prev => {
+      const next = [...prev]
+      const idx = next.findIndex(c => c.date === date)
+      const target = idx !== -1 ? next[idx] : { date, categories: defaultChecklistCategories() }
+      if (idx === -1) next.unshift(target as DailyChecklist)
+      const cat = target.categories.find(c => c.name === areaName)
+      if (!cat) return next
+      cat.items = cat.items.filter(i => i.id !== itemId)
+      upsertDailyChecklist(target as DailyChecklist, kitchenCode || undefined).catch(() => {})
+      return next
+    })
+  }, [defaultChecklistCategories])
+
+  const addChecklistCategory = useCallback((date: string, name: string) => {
+    setDailyChecklists(prev => {
+      const next = [...prev]
+      const idx = next.findIndex(c => c.date === date)
+      const target = idx !== -1 ? next[idx] : { date, categories: defaultChecklistCategories() }
+      if (idx === -1) next.unshift(target as DailyChecklist)
+      const exists = target.categories.some(c => c.name.toLowerCase() === name.toLowerCase())
+      if (!exists) {
+        target.categories.push({ name, items: [] })
+        upsertDailyChecklist(target as DailyChecklist, kitchenCode || undefined).catch(() => {})
+      }
+      return next
+    })
+  }, [defaultChecklistCategories])
+
+  const addWeeklyRule = useCallback((weekday: number, category: string, section: 'pre' | 'mont' | undefined, label: string) => {
+    const rule = { weekday, category, section, label }
+    upsertWeeklyRule(rule, kitchenCode || undefined).catch(() => {})
+  }, [kitchenCode])
+
+  const deleteWeeklyRuleHook = useCallback((id: string) => {
+    deleteWeeklyRule(id, kitchenCode || undefined).catch(() => {})
+  }, [kitchenCode])
 
   const getDailyInventory = useCallback((plaza: string, date: string): { date: string; plaza: string; items: Array<{ name: string; quantity: number }> } | null => {
     const found = dailyInventories.find(di => di.plaza === plaza && di.date === date)
     return found || null
   }, [dailyInventories])
 
-  const upsertDailyInventory = useCallback((plaza: string, date: string, items: Array<{ name: string; quantity: number }>) => {
-    setDailyInventories(prev => {
-      const next = [...prev]
-      const idx = next.findIndex(di => di.plaza === plaza && di.date === date)
-      const row = { plaza, date, items }
-      if (idx !== -1) next[idx] = row; else next.unshift(row)
-      return next
-    })
-  }, [])
+  const upsertDailyInventoryHook = useCallback((plaza: string, date: string, items: Array<{ name: string; quantity: number }>) => {
+    upsertDailyInventory({ date, plaza, items }, kitchenCode || undefined).catch(() => {})
+  }, [kitchenCode])
+
+  const getLatestInventory = useCallback((plaza: string): { date: string; plaza: string; items: Array<{ name: string; quantity: number }> } | null => {
+    const list = dailyInventories.filter(di => di.plaza === plaza)
+    if (list.length === 0) return null
+    const sorted = [...list].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+    return sorted[0]
+  }, [dailyInventories])
 
   const addUtensil = useCallback((u: Omit<Utensil, 'id'>) => {
     const id = Date.now().toString()
@@ -280,8 +525,34 @@ export const useInventory = () => {
     })
   }, [])
   const addRecipe = useCallback((recipe: Omit<Recipe, 'id'>) => {
-    setRecipes(prev => [{ ...recipe, id: Date.now().toString() }, ...prev]);
-  }, []);
+    const newRecipe = { ...recipe, id: Date.now().toString(), active: true }
+    upsertRecipe(newRecipe, kitchenCode || undefined).catch(() => {})
+  }, [kitchenCode]);
+
+  const updateRecipe = useCallback((id: string, patch: Partial<Recipe>) => {
+    setRecipes(prev => {
+      const found = prev.find(r => r.id === id)
+      if (found) {
+        const updated = { ...found, ...patch }
+        upsertRecipe(updated, kitchenCode || undefined).catch(() => {})
+      }
+      return prev // Optimistic updates handled by subscription or next fetch, but can be added here
+    })
+  }, [kitchenCode])
+
+  const duplicateRecipe = useCallback((id: string, newName?: string) => {
+    setRecipes(prev => {
+      const src = prev.find(r => r.id === id)
+      if (!src) return prev
+      const copy: Recipe = { ...src, id: Date.now().toString(), name: newName || `${src.name} (cópia)` }
+      upsertRecipe(copy, kitchenCode || undefined).catch(() => {})
+      return prev
+    })
+  }, [kitchenCode])
+
+  const deleteRecipeHook = useCallback((id: string) => {
+    deleteRecipe(id, kitchenCode || undefined).catch(() => {})
+  }, [kitchenCode])
   
   const updateItem = useCallback((itemName: string, quantity: number, operation: 'add' | 'set' = 'add') => {
     setSheets(prevSheets => {
@@ -368,7 +639,7 @@ export const useInventory = () => {
       
       return newSheets;
     });
-  }, [activeSheetIndex]);
+  }, [activeSheetIndex, kitchenCode, user?.email, scheduleSync]);
 
   const updateItemInAllSheets = useCallback((itemName: string, quantity: number, operation: 'add' | 'set' = 'add') => {
     setSheets(prevSheets => {
@@ -446,7 +717,7 @@ export const useInventory = () => {
 
       return newSheets;
     });
-  }, []);
+  }, [kitchenCode, user?.email, scheduleSync]);
 
   const undoLastChange = useCallback(() => {
     if (!undoEntry) return;
@@ -481,7 +752,7 @@ export const useInventory = () => {
       scheduleSync();
       return newSheets;
     })
-  }, [undoEntry, activeSheetIndex, kitchenCode, scheduleSync]);
+  }, [undoEntry, activeSheetIndex, kitchenCode, scheduleSync, selectedResponsible, user?.email]);
 
   const adjustByInventory = useCallback((counts: Array<{ id?: string; name: string; counted: number }>, scope: 'active' | 'all' = 'active') => {
     setSheets(prevSheets => {
@@ -631,56 +902,143 @@ export const useInventory = () => {
     if (!recipe || portions <= 0 || recipe.yield <= 0) return;
     const factor = portions / recipe.yield;
     recipe.ingredients.forEach(ing => {
-      const qty = ing.quantity * factor;
-      mutateItem(ing.itemName, qty, 'saida', 'Produção');
+      if (ing.isSubRecipe && ing.recipeId) {
+        const sub = recipes.find(r => r.id === ing.recipeId || r.name === ing.itemName);
+        if (sub && sub.yield > 0) {
+          const subFactor = (ing.quantity * factor) / sub.yield;
+          sub.ingredients.forEach(sing => {
+            const qty = sing.quantity * subFactor;
+            mutateItem(sing.itemName, qty, 'saida', 'Produção');
+          });
+        }
+      } else {
+        const qty = ing.quantity * factor;
+        mutateItem(ing.itemName, qty, 'saida', 'Produção');
+      }
     });
   }, [recipes, mutateItem]);
-  const addPurchase = useCallback((purchase: Omit<Purchase, 'id'>) => {
-    const id = Date.now().toString();
-    setPurchases(prev => [{ ...purchase, id }, ...prev]);
-    const unitCost = purchase.price && purchase.quantity > 0 ? purchase.price / purchase.quantity : undefined;
-    mutateItem(purchase.itemName, purchase.quantity, 'entrada', 'Compra', undefined, unitCost);
-  }, [mutateItem]);
+  const addPurchase = useCallback((purchase: Purchase) => {
+    upsertPurchase(purchase, kitchenCode || undefined).catch(() => {})
+  }, [kitchenCode]);
+
+  const updatePurchaseStatus = useCallback((id: string, status: 'received' | 'cancelled') => {
+    setPurchases(prev => {
+      const found = prev.find(p => p.id === id)
+      if (found) {
+        const updated = { ...found, status }
+        upsertPurchase(updated, kitchenCode || undefined).catch(() => {})
+        
+        if (status === 'received') {
+          updated.items.forEach((item: any) => {
+            updateItemInAllSheets(item.name, item.quantity, 'add');
+          });
+        }
+      }
+      return prev
+    })
+  }, [kitchenCode, updateItemInAllSheets])
 
   useEffect(() => {
     const id = window.setInterval(async () => {
+      // Se não houver kitchenCode ou sheets estiver vazio (após limpar), não puxa dados automaticamente para evitar re-popular com cache antigo ou dados deletados recentemente
       try {
         if (!kitchenCode) return;
+        // Comentei a lógica de sync periódico reverso que estava causando o problema de "zumbis" voltando
+        // O Realtime já deve cuidar das atualizações. O sync periódico aqui estava pegando dados antigos.
+        
+        /*
         const remote = await fetchSheetsWithItems(kitchenCode);
         if (!remote || remote.length === 0) return;
         const merged = mergeSheets(remote, sheets);
         setSheets(merged);
+        */
       } catch {}
     }, 15000);
     return () => window.clearInterval(id);
-  }, [kitchenCode]);
+  }, [kitchenCode, sheets]);
 
   useEffect(() => {
     if (!kitchenCode) return;
     const sub = subscribeItemsRealtime(kitchenCode, (payload) => {
       try {
-        const row: any = payload.new || payload.old
-        if (!row) return
+        const { eventType, new: newRow, old: oldRow } = payload
+        
         setSheets(prev => {
-          const next = [...prev]
-          const sheetIdx = next.findIndex(s => s.name === row.sheet_name)
-          if (sheetIdx === -1) return prev
-          const sheet = next[sheetIdx]
-          const idx = sheet.items.findIndex(i => i.id === String(row.item_id))
-          const updated: InventoryItem = {
+          // Deep copy das sheets e items para evitar mutação direta do state
+          const next = prev.map(s => ({ ...s, items: [...s.items] }))
+
+          // Helper para mapear row -> item
+          const mapRowToItem = (row: any, sheetName: string, existingItem?: InventoryItem): InventoryItem => ({
             id: String(row.item_id),
             name: String(row.name),
             quantity: Number(row.quantity) || 0,
             unit: row.unit || 'un',
-            category: row.category || sheet.name,
+            category: row.category || sheetName,
             lastUpdated: row.last_updated ? new Date(row.last_updated) : new Date(),
             updatedBy: row.updated_by || 'Usuário',
-            unitCost: idx !== -1 ? (sheet.items[idx] as any).unitCost : undefined
+            unitCost: existingItem?.unitCost // Preserva custo unitário se não vier do banco
+          })
+
+          // DELETE
+          if (eventType === 'DELETE' && oldRow) {
+            const sheetIdx = next.findIndex(s => s.name === oldRow.sheet_name)
+            if (sheetIdx !== -1) {
+              next[sheetIdx].items = next[sheetIdx].items.filter(i => i.id !== String(oldRow.item_id))
+            }
+            return next
           }
-          if (idx !== -1) sheet.items[idx] = updated; else sheet.items.push(updated)
+
+          // INSERT
+          if (eventType === 'INSERT' && newRow) {
+            const sheetIdx = next.findIndex(s => s.name === newRow.sheet_name)
+            // Se a aba não existe localmente, não fazemos nada (ou poderíamos criar, mas o padrão é sync de sheets separada)
+            if (sheetIdx !== -1) {
+              const sheet = next[sheetIdx]
+              const exists = sheet.items.some(i => i.id === String(newRow.item_id))
+              if (!exists) {
+                sheet.items.push(mapRowToItem(newRow, sheet.name))
+              }
+            }
+            return next
+          }
+
+          // UPDATE
+          if (eventType === 'UPDATE' && newRow) {
+            const oldSheetName = oldRow?.sheet_name || newRow.sheet_name
+            
+            // Se mudou de aba
+            if (oldRow && newRow.sheet_name !== oldSheetName) {
+              // Remove da velha
+              const oldSheetIdx = next.findIndex(s => s.name === oldSheetName)
+              if (oldSheetIdx !== -1) {
+                next[oldSheetIdx].items = next[oldSheetIdx].items.filter(i => i.id !== String(oldRow.item_id))
+              }
+              // Adiciona na nova
+              const newSheetIdx = next.findIndex(s => s.name === newRow.sheet_name)
+              if (newSheetIdx !== -1) {
+                next[newSheetIdx].items.push(mapRowToItem(newRow, newRow.sheet_name))
+              }
+            } else {
+              // Mesma aba
+              const sheetIdx = next.findIndex(s => s.name === newRow.sheet_name)
+              if (sheetIdx !== -1) {
+                const sheet = next[sheetIdx]
+                const idx = sheet.items.findIndex(i => i.id === String(newRow.item_id))
+                const updated = mapRowToItem(newRow, sheet.name, idx !== -1 ? sheet.items[idx] : undefined)
+                
+                if (idx !== -1) {
+                  sheet.items[idx] = updated
+                } else {
+                  sheet.items.push(updated)
+                }
+              }
+            }
+            return next
+          }
+
           return next
         })
-      } catch {}
+      } catch (e) { console.error('Realtime error:', e) }
     })
     const subUt = subscribeUtensilsRealtime(kitchenCode, (payload) => {
       try {
@@ -729,8 +1087,10 @@ export const useInventory = () => {
   const dailyItems = useMemo(() => {
     if (!selectedDailyPlaza) return [] as InventoryItem[]
     const names = new Set<string>()
-    recipes.filter(r => (r.category || '').toLowerCase() === selectedDailyPlaza.toLowerCase())
-      .forEach(r => r.ingredients.forEach(ing => names.add(ing.itemName)))
+    const lowerPlaza = selectedDailyPlaza.toLowerCase()
+    const recipePool = recipes.filter(r => (r.category || '').toLowerCase().includes(lowerPlaza) && ((r.active ?? true) === true))
+    const selectedPool = selectedDailyRecipeIds.length > 0 ? recipePool.filter(r => selectedDailyRecipeIds.includes(r.id)) : recipePool
+    selectedPool.forEach(r => r.ingredients.forEach(ing => names.add(ing.itemName)))
     if (names.size === 0) {
       const d = new Date(); d.setDate(d.getDate() - 1)
       const prev = dailyInventories.find(di => di.plaza === selectedDailyPlaza && di.date === d.toISOString().slice(0,10))
@@ -744,8 +1104,24 @@ export const useInventory = () => {
       const found = byName.get(n.toLowerCase())
       return found ? found : { id: n, name: n, quantity: 0, unit: 'un', category: selectedDailyPlaza || undefined }
     })
-  }, [selectedDailyPlaza, recipes, sheets, dailyInventories])
+  }, [selectedDailyPlaza, recipes, sheets, dailyInventories, selectedDailyRecipeIds])
   
+  const clearAllData = useCallback(async () => {
+    try {
+      const code = kitchenCode || (user?.id ? await fetchKitchenCodeForUser(user.id) : undefined)
+      if (!code) {
+        toast({ title: 'Erro', description: 'Cozinha não identificada para limpeza.', variant: 'destructive' })
+        return
+      }
+      await clearInventory(code)
+      setSheets([])
+      toast({ title: 'Inventário limpo', description: 'Todos os itens foram removidos.' })
+    } catch (error) {
+      const description = (error as any)?.message || 'Falha ao limpar inventário.'
+      toast({ title: 'Erro', description, variant: 'destructive' })
+    }
+  }, [kitchenCode, user?.id])
+
   return {
     sheets,
     activeSheetIndex,
@@ -754,8 +1130,11 @@ export const useInventory = () => {
     setSelectedResponsible,
     selectedDailyPlaza,
     setSelectedDailyPlaza,
+    selectedDailyRecipeIds,
+    setSelectedDailyRecipeIds,
     dailyInventories,
     getDailyInventory,
+    getLatestInventory,
     upsertDailyInventory,
     updateLogs,
     searchQuery,
@@ -771,17 +1150,29 @@ export const useInventory = () => {
     setKitchenCode,
     undoLastChange,
     dailyChecklists,
-    getChecklistForDate,
     toggleChecklistItem,
+    getChecklistForDate,
     setChecklistCategoryAll,
     resetChecklist,
+    addChecklistItem,
+    addChecklistItemsBulk,
+    updateChecklistItem,
+    deleteChecklistItem,
+    addChecklistCategory,
+    weeklyRules,
+    addWeeklyRule,
+    deleteWeeklyRule,
     utensils,
     addUtensil,
     updateUtensilStatus,
     recipes,
     addRecipe,
+    updateRecipe,
+    duplicateRecipe,
+    deleteRecipe,
     registerProduction,
     purchases,
     addPurchase,
+    clearAllData,
   };
 };

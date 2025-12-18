@@ -1,4 +1,4 @@
-# Manifesto AI - Sheet Chef Sync
+# Manifesto AI - Cozzi
 
 Este arquivo documenta todos os arquivos e componentes criados pela IA durante o desenvolvimento do projeto.
 

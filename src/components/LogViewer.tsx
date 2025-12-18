@@ -4,22 +4,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
 import { UpdateLogs } from '@/components/UpdateLogs';
-import { useInventory } from '@/hooks/useInventory';
 import { ScrollText, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { UpdateLog, Sheet } from '@/types/inventory';
 
-export const LogViewer: React.FC = React.memo(() => {
-  const { updateLogs, sheets, undoLastChange } = useInventory();
+interface LogViewerProps {
+  logs: UpdateLog[];
+  sheets: Sheet[];
+  onUndo: () => void;
+}
 
+export const LogViewer: React.FC<LogViewerProps> = React.memo(({ logs, sheets, onUndo }) => {
   const stats = React.useMemo(() => {
-    const total = updateLogs.length;
-    const additions = updateLogs.filter(log => (log.change || log.quantidadeAlterada) > 0).length;
-    const subtractions = updateLogs.filter(log => (log.change || log.quantidadeAlterada) < 0).length;
+    const total = logs.length;
+    const additions = logs.filter(log => (log.change || log.quantidadeAlterada) > 0).length;
+    const subtractions = logs.filter(log => (log.change || log.quantidadeAlterada) < 0).length;
     
     return { total, additions, subtractions };
-  }, [updateLogs]);
+  }, [logs]);
 
-  const hasSheets = React.useMemo(() => sheets.length === 0, [sheets.length]);
+  const hasSheets = React.useMemo(() => sheets.length > 0, [sheets.length]);
 
   return (
     <div className="space-y-6">
@@ -92,14 +96,14 @@ export const LogViewer: React.FC = React.memo(() => {
                 <ScrollText className="h-5 w-5" />
                 Histórico de Alterações
                 <Badge variant="secondary" className="ml-auto">
-                  {updateLogs.length} registros
+                  {logs.length} registros
                 </Badge>
-                {updateLogs.length > 0 && (
+                {logs.length > 0 && (
                   <Button
                     variant="outline"
                     size="sm"
                     className="ml-2"
-                    onClick={() => undoLastChange()}
+                    onClick={onUndo}
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
                     Desfazer última
@@ -108,14 +112,14 @@ export const LogViewer: React.FC = React.memo(() => {
               </CardTitle>
             </CardHeader>
           <CardContent>
-            {updateLogs.length > 0 ? (
+            {logs.length > 0 ? (
               <div className="space-y-4">
-                <UpdateLogs logs={updateLogs} />
+                <UpdateLogs logs={logs} />
                 
-                {updateLogs.length > 10 && (
+                {logs.length > 10 && (
                   <div className="text-center">
                     <Badge variant="outline">
-                      Mostrando os 10 registros mais recentes de {updateLogs.length} total
+                      Mostrando os 10 registros mais recentes de {logs.length} total
                     </Badge>
                   </div>
                 )}
@@ -126,7 +130,7 @@ export const LogViewer: React.FC = React.memo(() => {
                 <h3 className="text-lg font-semibold mb-2">Nenhum registro encontrado</h3>
                 <p className="text-sm text-center max-w-md">
                   Quando você fizer alterações no inventário, elas aparecerão aqui.
-                  {hasSheets && " Importe uma planilha primeiro para começar."}
+                  {!hasSheets && " Importe uma planilha primeiro para começar."}
                 </p>
               </div>
             )}

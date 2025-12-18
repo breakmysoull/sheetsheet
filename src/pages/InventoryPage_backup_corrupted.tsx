@@ -202,7 +202,7 @@ const InventoryPage: React.FC = () => {
             sheet.items[itemIndex].quantity = quantity;
           }
           sheet.items[itemIndex].lastUpdated = new Date();
-          sheet.items[itemIndex].updatedBy = "Usu·rio";
+          sheet.items[itemIndex].updatedBy = "UsuÔøΩrio";
         } else {
           const newItem = {
             id: Date.now().toString() + sheetIndex,
@@ -211,7 +211,7 @@ const InventoryPage: React.FC = () => {
             unit: "un",
             category: sheet.name,
             lastUpdated: new Date(),
-            updatedBy: "Usu·rio"
+            updatedBy: "UsuÔøΩrio"
           };
           sheet.items.push(newItem);
         }
@@ -274,7 +274,7 @@ const InventoryPage: React.FC = () => {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
               <Package className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-              Invent√°rio SheetChef
+              Invent√°rio Cozzi
             </h1>
             <p className="text-muted-foreground mt-1">
               Gerencie seu estoque de forma inteligente
