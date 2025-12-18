@@ -391,10 +391,15 @@ export async function fetchKitchenCodeForUser(userId: string): Promise<string | 
 export async function fetchUserRole(userId: string): Promise<string | null> {
   if (!supabase) return null
   try {
-    const { data } = await supabase.from('profiles').select('role').eq('user_id', userId).limit(1)
+    const { data, error } = await supabase.from('profiles').select('role').eq('user_id', userId).limit(1)
+    if (error) {
+      console.error('Error fetching user role:', error)
+      return null
+    }
     const row = (data || [])[0]
     return row ? String(row.role) : null
-  } catch {
+  } catch (err) {
+    console.error('Exception fetching user role:', err)
     return null
   }
 }
