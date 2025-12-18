@@ -74,29 +74,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    if (!supabase?.auth) {
-      const defAdmin = import.meta.env.VITE_DEFAULT_ADMIN_EMAIL
-      const fakeId = `local-${btoa(email).replace(/=+/g, '')}`
-      setUser({ id: fakeId, email })
-      let r: Role = 'funcionario'
-      const uEmail = email || ''
-      if (uEmail === 'petipeti@peti.com') r = 'super_admin'
-      else if (uEmail === 'peti@peti.com') r = 'funcionario'
-      else if (uEmail === defAdmin) r = 'super_admin'
-      else {
-        const stored = (localStorage.getItem('auth_role') as Role) || 'funcionario'
-        r = stored
-      }
-      setRole(r)
-      localStorage.setItem('auth_role', r)
-      setPermissions(computePermissions(r))
-      const existing = localStorage.getItem('kitchen_code')
-      if (!existing) {
-        const code = Math.random().toString(36).slice(2, 8).toUpperCase()
-        localStorage.setItem('kitchen_code', code)
-      }
-      return
+    if (!supabase || !supabase.auth) {
+      console.error("Supabase client not initialized. Check environment variables.")
+      throw new Error("Erro de conexão: Servidor de login não configurado. Verifique as variáveis de ambiente (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY).")
     }
+    
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
     setUser({ id: data.user!.id, email: data.user!.email || undefined })
@@ -127,6 +109,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const signUp = async (email: string, password: string) => {
+    if (!supabase || !supabase.auth) {
+      throw new Error("Erro de conexão: Servidor de login não configurado.")
+    }
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
     const u = data.user
