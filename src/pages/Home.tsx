@@ -162,13 +162,13 @@ const Home = () => {
               Exportar
             </Button>
           )}
-          {sheets.length > 0 && can('inventory.view') && (
+          {can('inventory.view') && (
             <Button onClick={() => navigate('/inventory')} className="h-24 flex flex-col items-center justify-center gap-2 bg-white text-black border">
               <Package className="h-6 w-6" />
               Inventário
             </Button>
           )}
-          {sheets.length > 0 && can('inventory.view') && (
+          {can('inventory.view') && (
             <Button onClick={() => navigate('/inventory-daily')} className="h-24 flex flex-col items-center justify-center gap-2 bg-white text-black border">
               <ClipboardList className="h-6 w-6" />
               Inventário diário
@@ -192,7 +192,7 @@ const Home = () => {
               Produção
             </Button>
           )}
-          {can('purchases.register') && (
+          {can('requests.view') && (
             <Button onClick={() => navigate('/requests')} className="h-24 flex flex-col items-center justify-center gap-2 bg-white text-black border">
               <ShoppingCart className="h-6 w-6" />
               Solicitações

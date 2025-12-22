@@ -105,12 +105,15 @@ export interface Utensil {
 }
 
 export type RequestStatus = 'pending' | 'approved' | 'adjusted' | 'fulfilled' | 'canceled';
+export type RequestPriority = 'low' | 'medium' | 'high';
 
 export interface Request {
   id: string; // UUID
   kitchen_code: string;
   date_for: string; // YYYY-MM-DD
   status: RequestStatus;
+  priority?: RequestPriority;
+  request_type?: string;
   notes?: string;
   created_by?: string;
   created_at: string; // ISO string

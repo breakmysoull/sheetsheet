@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Search, Save, CheckCircle, AlertCircle, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Search, Save, CheckCircle, AlertCircle, X, Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   Dialog, 
@@ -16,13 +18,19 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { createRequest, searchProducts, ProductSuggestion, CreateRequestItemInput } from '../services/requestsService';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, addDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const RequestCreationPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  // Estados da Solicitação (Header)
+  const [requestPriority, setRequestPriority] = useState<'low'|'medium'|'high'>('medium');
+  const [requestType, setRequestType] = useState('daily_restock');
+  const [requestDate, setRequestDate] = useState(format(addDays(new Date(), 1), 'yyyy-MM-dd')); // Padrão: Amanhã
+  const [requestNotes, setRequestNotes] = useState('');
+
   // Estados do formulário de adição de item
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
@@ -167,7 +175,12 @@ const RequestCreationPage: React.FC = () => {
     setShowConfirmDialog(false);
     
     try {
-      const result = await createRequest(items);
+      const result = await createRequest(items, {
+        priority: requestPriority,
+        requestType,
+        dateFor: requestDate,
+        notes: requestNotes
+      });
       if (result) {
         toast({
           title: "Solicitação criada!",
@@ -187,9 +200,6 @@ const RequestCreationPage: React.FC = () => {
     }
   };
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 pb-32">
       <div className="max-w-3xl mx-auto space-y-6">
@@ -202,11 +212,65 @@ const RequestCreationPage: React.FC = () => {
           <h1 className="text-xl font-bold">Nova Solicitação</h1>
         </div>
 
-        <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/20 text-center">
-          <p className="text-sm text-muted-foreground">
-            Solicitando para: <span className="font-semibold text-foreground">{format(tomorrow, "dd 'de' MMMM", { locale: ptBR })}</span>
-          </p>
-        </div>
+        {/* Detalhes da Solicitação */}
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-3">
+             <CardTitle className="text-base font-medium">Informações Gerais</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground uppercase">Tipo de Solicitação</label>
+              <Select value={requestType} onValueChange={setRequestType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily_restock">Reposição Diária</SelectItem>
+                  <SelectItem value="urgent">Urgência / Emergência</SelectItem>
+                  <SelectItem value="event">Evento Especial</SelectItem>
+                  <SelectItem value="equipment">Equipamento / Utensílio</SelectItem>
+                  <SelectItem value="other">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground uppercase">Prioridade</label>
+              <Select value={requestPriority} onValueChange={(v: any) => setRequestPriority(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a prioridade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Baixa</SelectItem>
+                  <SelectItem value="medium">Média</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground uppercase">Data Necessária</label>
+              <div className="relative">
+                <Input 
+                  type="date" 
+                  value={requestDate} 
+                  onChange={(e) => setRequestDate(e.target.value)}
+                  min={format(new Date(), 'yyyy-MM-dd')}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+               <label className="text-xs font-medium text-muted-foreground uppercase">Observações Gerais</label>
+               <Textarea 
+                 placeholder="Observações gerais sobre esta solicitação..." 
+                 className="resize-none h-20"
+                 value={requestNotes}
+                 onChange={(e) => setRequestNotes(e.target.value)}
+               />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Formulário de Adição */}
         <Card className="border-2 border-muted/40 shadow-sm">
@@ -360,7 +424,7 @@ const RequestCreationPage: React.FC = () => {
             ) : (
               <Save className="h-5 w-5 mr-2" />
             )}
-            Solicitar para Amanhã
+            Enviar Solicitação
           </Button>
         </div>
       </div>
@@ -371,7 +435,7 @@ const RequestCreationPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Confirmar Solicitação</DialogTitle>
             <DialogDescription>
-              Você está prestes a enviar uma solicitação com {items.length} itens para o dia {format(tomorrow, "dd/MM/yyyy")}.
+              Você está prestes a enviar uma solicitação com {items.length} itens para o dia {format(parseISO(requestDate), "dd/MM/yyyy")}.
               Deseja continuar?
             </DialogDescription>
           </DialogHeader>

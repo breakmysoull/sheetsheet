@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Filter, Calendar as CalendarIcon, Loader2, ChevronDown, ChevronUp, Plus, Edit2, Check, X, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Filter, Calendar as CalendarIcon, Loader2, ChevronDown, ChevronUp, Plus, Edit2, Check, X, Save, Trash2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Request, RequestItem, RequestStatus } from '@/types/inventory';
 import { fetchRequests, subscribeRequestsRealtime, fetchRequestItems, updateRequestStatus, updateRequestItem, deleteRequestItem } from '@/services/requestsService';
 import { fetchUserRole } from '@/services/supabaseInventory';
@@ -42,12 +43,29 @@ const statusLabels: Record<string, string> = {
   canceled: 'Cancelado',
 };
 
+const priorityColors: Record<string, string> = {
+  high: 'text-red-600 bg-red-100 border-red-200',
+  medium: 'text-amber-600 bg-amber-100 border-amber-200',
+  low: 'text-green-600 bg-green-100 border-green-200',
+};
+
+const priorityLabels: Record<string, string> = {
+  high: 'Alta',
+  medium: 'Média',
+  low: 'Baixa',
+};
+
 const RequestsPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filtros
   const [filterDate, setFilterDate] = useState<string>('');
+  const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   
@@ -88,11 +106,37 @@ const RequestsPage: React.FC = () => {
     }
   };
 
+  const requestsRef = React.useRef(requests);
+  
+  useEffect(() => {
+    requestsRef.current = requests;
+  }, [requests]);
+
   useEffect(() => {
     checkUserRole();
     loadRequests();
     
-    const { unsubscribe } = subscribeRequestsRealtime(() => {
+    const { unsubscribe } = subscribeRequestsRealtime((payload: any) => {
+      if (payload.eventType === 'UPDATE') {
+         const newStatus = payload.new.status;
+         const reqId = payload.new.id;
+         const currentReqs = requestsRef.current;
+         const oldReq = currentReqs.find(r => r.id === reqId);
+         
+         if (oldReq && oldReq.status !== newStatus) {
+             const label = statusLabels[newStatus] || newStatus;
+             toast({
+                 title: "Status Atualizado",
+                 description: `Solicitação para ${format(new Date(oldReq.date_for), "dd/MM")} mudou para ${label}.`,
+             });
+         }
+      } else if (payload.eventType === 'INSERT') {
+         toast({
+            title: "Nova Solicitação",
+            description: "Uma nova solicitação foi recebida.",
+         });
+      }
+      
       loadRequests(); 
     });
 
@@ -241,6 +285,12 @@ const RequestsPage: React.FC = () => {
     }
   };
 
+  const filteredRequests = requests.filter(req => {
+    if (filterStatus !== 'all' && req.status !== filterStatus) return false;
+    if (filterPriority !== 'all' && (req.priority || 'medium') !== filterPriority) return false;
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 pb-20">
       <div className="max-w-3xl mx-auto space-y-4">
@@ -262,9 +312,9 @@ const RequestsPage: React.FC = () => {
 
         {/* Filtros */}
         <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="flex-1">
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Filtrar por Data</label>
+          <CardContent className="p-4 grid gap-4 md:grid-cols-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Data</label>
               <div className="relative">
                 <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -275,10 +325,37 @@ const RequestsPage: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="flex items-end">
-              <Button variant="outline" size="icon" onClick={() => setFilterDate('')} title="Limpar filtro">
-                <Filter className="h-4 w-4" />
-              </Button>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Status</label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="approved">Aprovado</SelectItem>
+                  <SelectItem value="adjusted">Ajustado</SelectItem>
+                  <SelectItem value="fulfilled">Concluído</SelectItem>
+                  <SelectItem value="canceled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+               <label className="text-xs font-medium text-muted-foreground">Prioridade</label>
+               <Select value={filterPriority} onValueChange={setFilterPriority}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Prioridade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="low">Baixa</SelectItem>
+                  <SelectItem value="medium">Média</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -288,13 +365,22 @@ const RequestsPage: React.FC = () => {
           <div className="flex justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : requests.length === 0 ? (
+        ) : filteredRequests.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p>Nenhuma solicitação encontrada.</p>
+            {(filterDate || filterStatus !== 'all' || filterPriority !== 'all') && (
+               <Button variant="link" onClick={() => {
+                 setFilterDate('');
+                 setFilterStatus('all');
+                 setFilterPriority('all');
+               }}>
+                 Limpar filtros
+               </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
-            {requests.map((req) => {
+            {filteredRequests.map((req) => {
               const isEditing = editingRequestId === req.id;
               const canEdit = isAdmin && (req.status === 'pending' || req.status === 'adjusted');
               const canApprove = isAdmin && (req.status === 'pending' || req.status === 'adjusted');
@@ -304,17 +390,33 @@ const RequestsPage: React.FC = () => {
                   <Collapsible open={expandedRequestId === req.id} onOpenChange={() => toggleExpand(req.id)}>
                     <div className="p-4 flex items-start justify-between cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => toggleExpand(req.id)}>
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-lg">
                             {format(new Date(req.date_for), "dd 'de' MMMM", { locale: ptBR })}
                           </span>
                           <Badge className={cn("text-white capitalize", statusColors[req.status] || "bg-gray-500")}>
                             {statusLabels[req.status] || req.status}
                           </Badge>
+                           <Badge variant="outline" className={cn(priorityColors[req.priority || 'medium'])}>
+                              {priorityLabels[req.priority || 'medium']}
+                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Criado em {format(new Date(req.created_at), "dd/MM/yyyy HH:mm")} por {req.created_by?.slice(0, 8)}...
-                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                           {req.request_type && (
+                             <span className="bg-muted px-1.5 py-0.5 rounded font-medium text-foreground/80">
+                               {req.request_type === 'daily_restock' ? 'Reposição' : req.request_type}
+                             </span>
+                           )}
+                           <span>•</span>
+                           <span>{format(new Date(req.created_at), "HH:mm")}</span>
+                           <span>•</span>
+                           <span>{req.created_by?.slice(0, 8)}...</span>
+                        </div>
+                        {req.notes && (
+                           <p className="text-xs text-muted-foreground italic mt-1 line-clamp-1">
+                             Obs: {req.notes}
+                           </p>
+                        )}
                       </div>
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm" className="w-9 p-0">

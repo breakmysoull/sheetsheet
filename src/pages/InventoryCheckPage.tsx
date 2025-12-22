@@ -10,14 +10,23 @@ import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from '@/hooks/use-toast'
+import { useAuth } from '@/context/AuthContext'
 
 const InventoryCheckPage: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation() as any
+  const { can } = useAuth()
   const { sheets, activeSheetIndex, dailyItems, selectedDailyPlaza, setSelectedDailyPlaza, selectedResponsible, setSelectedResponsible, getLatestInventory, upsertDailyInventory, recipes, selectedDailyRecipeIds, setSelectedDailyRecipeIds } = useInventory() as any
   const activeSheet = sheets[activeSheetIndex]
   const itemsToDisplay = dailyItems
   const [extraItems, setExtraItems] = React.useState<Array<{ id: string; name: string; quantity: number }>>([])
+  
+  // Protect route
+  React.useEffect(() => {
+    if (!can('inventory.view')) {
+      navigate('/home')
+    }
+  }, [can, navigate])
   
   const recipeOptions = React.useMemo(() => {
     const plazaLc = String(selectedDailyPlaza || '').toLowerCase()

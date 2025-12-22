@@ -10,12 +10,22 @@ import { Badge } from '@/components/ui/badge'
 import { ClipboardList, UserPlus, ArrowLeft } from 'lucide-react'
 
 type Responsible = { id: string; name: string; plaza: string; active: boolean }
+import { useAuth } from '@/context/AuthContext'
 
 const StorageKey = 'responsibles'
 
 const InventoryDailyPage: React.FC = () => {
   const navigate = useNavigate()
+  const { can } = useAuth()
   const { setSelectedResponsible, setSelectedDailyPlaza } = useInventory() as any
+  
+  // Protect route
+  React.useEffect(() => {
+    if (!can('inventory.view')) {
+      navigate('/home')
+    }
+  }, [can, navigate])
+
   const [responsibles, setResponsibles] = React.useState<Responsible[]>(() => {
     const raw = localStorage.getItem(StorageKey)
     return raw ? JSON.parse(raw) : []

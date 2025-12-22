@@ -29,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
        'recipes.view','recipes.create','recipes.edit','recipes.delete','recipes.viewCosts','recipes.changeUnits',
        'production.register','production.viewHistory','production.edit','production.cancel',
        'purchases.register','purchases.viewPrevious','purchases.edit','purchases.delete',
+       'requests.view', 'requests.create', 'requests.edit', 'requests.delete',
        'reports.viewDaily','reports.viewWeekly','reports.viewMonthly','reports.cmv','reports.forecast','reports.audit',
        'admin.viewUsers','admin.createUsers','admin.editPermissions','admin.deleteUsers','admin.backup','admin.systemConfig',
        'logs.viewAll','checklist.use','utensils.edit','tabs.accessHidden'].forEach(allow)
@@ -36,12 +37,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ['inventory.view','inventory.edit','inventory.add','inventory.import',
        'recipes.view','recipes.create',
        'purchases.register',
+       'requests.view', 'requests.create', 'requests.edit', 'requests.delete',
        'reports.viewDaily','reports.viewMonthly',
        'logs.viewKitchen','checklist.use','utensils.edit','tabs.accessHidden'].forEach(allow)
     } else if (r === 'funcionario') {
       ['inventory.view','inventory.edit',
        'checklist.use',
-       'recipes.view'].forEach(allow)
+       'recipes.view',
+       'requests.view', 'requests.create', 'requests.edit', 'requests.delete'].forEach(allow)
     } else if (r === 'auxiliar') {
       ['inventory.view','checklist.use','recipes.view'].forEach(allow)
     }

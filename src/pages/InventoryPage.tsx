@@ -59,7 +59,13 @@ const InventoryPage: React.FC = () => {
   } = useInventory();
   const { can, user, role } = useAuth();
 
+  React.useEffect(() => {
+    if (!can('inventory.view')) {
+      navigate('/home')
+    }
+  }, [can, navigate])
   
+
 
   // Filter items by category
   const categoryFilteredItems = React.useMemo(() => {

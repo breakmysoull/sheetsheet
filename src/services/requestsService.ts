@@ -56,7 +56,15 @@ export interface CreateRequestItemInput {
   productName: string;
 }
 
-export async function createRequest(items: CreateRequestItemInput[]): Promise<{ request: Request; items: RequestItem[] } | null> {
+export async function createRequest(
+  items: CreateRequestItemInput[], 
+  metadata?: { 
+    priority: 'low'|'medium'|'high'; 
+    requestType: string; 
+    dateFor: string;
+    notes?: string;
+  }
+): Promise<{ request: Request; items: RequestItem[] } | null> {
   if (!supabase) throw new Error('Supabase client not initialized');
 
   // 1. Validar entradas
@@ -80,16 +88,17 @@ export async function createRequest(items: CreateRequestItemInput[]): Promise<{ 
     throw new Error('Código da cozinha não encontrado para o usuário.');
   }
 
-  // 3. Calcular Data (Amanhã)
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  
-  // Formatar YYYY-MM-DD usando hora local para evitar problemas de fuso horário UTC
-  const year = tomorrow.getFullYear();
-  const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-  const day = String(tomorrow.getDate()).padStart(2, '0');
-  const dateFor = `${year}-${month}-${day}`;
+  // 3. Calcular Data (Default: Amanhã se não fornecido)
+  let dateFor = metadata?.dateFor;
+  if (!dateFor) {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const day = String(tomorrow.getDate()).padStart(2, '0');
+    dateFor = `${year}-${month}-${day}`;
+  }
 
   // 4. Criar Solicitação (Header)
   const { data: requestData, error: requestError } = await supabase
@@ -98,8 +107,10 @@ export async function createRequest(items: CreateRequestItemInput[]): Promise<{ 
       kitchen_code: kitchenCode,
       date_for: dateFor,
       status: 'pending',
+      priority: metadata?.priority || 'medium',
+      request_type: metadata?.requestType || 'Outros',
       created_by: user.id,
-      notes: 'Solicitação criada via app'
+      notes: metadata?.notes || 'Solicitação criada via app'
     })
     .select()
     .single();
